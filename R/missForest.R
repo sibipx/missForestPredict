@@ -160,7 +160,7 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
 
     for (s in 1 : p) {
       varInd <- sort.j[s]
-      if (noNAvar[[varInd]] != 0) {
+
         obsi <- !NAloc[, varInd]
         misi <- NAloc[, varInd]
         obsY <- ximp[obsi, varInd]
@@ -199,7 +199,12 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
           # and for survival one minus Harrell's C-index.
 
           # misY <- predict(RF, misX)
-          misY <- predict(RF, misX)$predictions
+          if (nrow(misX) > 0) { # if the column is not complete
+            misY <- predict(RF, misX)$predictions
+          } else {
+            misY <- c()
+          }
+
         } else {
           obsY <- factor(obsY)
           summarY <- summary(obsY)
@@ -244,11 +249,15 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
 
             ## predict missing parts of Y
             #misY <- predict(RF, misX)
-            misY <- predict(RF, misX)$predictions
+            if (nrow(misX) > 0) { # if the column is not complete
+              misY <- predict(RF, misX)$predictions
+            } else {
+              misY <- c()
+            }
           }
         }
         ximp[misi, varInd] <- misY
-      }
+
     }
 
     cat('done!\n')
