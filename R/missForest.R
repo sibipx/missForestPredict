@@ -102,6 +102,9 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
     stop(sprintf('column %s must be factor or numeric, is %s', names(xmis)[t.co], class(xmis[[t.co]])))
   }
 
+  # keep column names
+  names(var_single_init) <- col_names
+
   ## extract missingness pattern
   NAloc <- is.na(xmis)            # where are missings
   noNAvar <- apply(NAloc, 2, sum) # how many are missing in the vars
@@ -269,6 +272,8 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
         ximp[misi, varInd] <- misY
 
     }
+
+    names(models[[iter + 1]]) <- col_names[sort.j]
 
     cat('done!\n')
 
