@@ -146,8 +146,12 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
     }
   }
 
+  models <- list()
   ## iterate missForest
   while (stopCriterion(varType, convNew, convOld, iter, maxiter)){
+
+    models[[iter + 1]] <- list()
+
     if (iter != 0){
       convOld <- convNew
       OOBerrOld <- OOBerr
@@ -198,6 +202,9 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
           # for probability estimation the Brier score, for regression the mean squared error
           # and for survival one minus Harrell's C-index.
 
+          # save model
+          models[[iter + 1]][[varInd]] <- RF
+
           # misY <- predict(RF, misX)
           if (nrow(misX) > 0) { # if the column is not complete
             misY <- predict(RF, misX)$predictions
@@ -246,6 +253,9 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
             ## record out-of-bag error
             #OOBerror[varInd] <- RF$err.rate[[ntree, 1]]
             OOBerror[varInd] <- RF$prediction.error
+
+            # save model
+            models[[iter + 1]][[varInd]] <- RF
 
             ## predict missing parts of Y
             #misY <- predict(RF, misX)
@@ -336,6 +346,7 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
 
   # save single initialization as list
   out$init <- var_single_init
+  out$models <- models
 
   class(out) <- 'missForest'
   return(out)
