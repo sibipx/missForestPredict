@@ -273,7 +273,7 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
 
     }
 
-    names(models[[iter + 1]]) <- col_names[sort.j]
+    names(models[[iter + 1]]) <- col_names
 
     cat('done!\n')
 
@@ -352,6 +352,7 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
   # save single initialization as list
   out$init <- var_single_init
   out$models <- models
+  out$impute_sequence <- col_names[sort.j]
 
   class(out) <- 'missForest'
   return(out)
