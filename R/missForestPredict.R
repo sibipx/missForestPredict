@@ -23,10 +23,21 @@ missForestPredict <- function(missForestObj, newdata){
   # check that initialization is complete
   if (any(is.na(ximp))) stop("Something went wrong in initialization")
 
+  NAloc <- is.na(newdata)
+  n_iter <- length(missForestObj$models)
+  impute_sequence <- missForestObj$impute_sequence
 
-  # for iteration
-    # for column
-      # impute
+  # impute iteratively
+  for (i in 1:n_iter){
+    iter_models <- missForestObj$models[[i]]
+
+    for (c in impute_sequence){
+      if (any(NAloc[,c])){ # impute only missing columns
+        model <- iter_models[[c]]
+        ximp[NAloc[,c],c] <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
+      }
+    }
+  }
 
   return(ximp)
 
