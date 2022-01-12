@@ -8,11 +8,13 @@
 ## Acknowledgement: Steve Weston for input regarding parallel execution (2012)
 ##############################################################################
 
-missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
+missForest <- function(xmis, maxiter = 10, ntree = 500, variablewise = FALSE,
                        decreasing = FALSE, verbose = FALSE,
                        mtry = floor(sqrt(ncol(xmis))), replace = TRUE,
-                       classwt = NULL, cutoff = NULL, strata = NULL,
-                       sampsize = NULL, nodesize = NULL, maxnodes = NULL,
+                       class.weights = NULL, cutoff = NULL, strata = NULL,
+                       sample.fraction = NULL,
+                       #nodesize = NULL,
+                       maxnodes = NULL,
                        xtrue = NA)
 { ## ----------------------------------------------------------------------
   ## Arguments:
@@ -27,10 +29,10 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
   ## mtry         = how many variables should be tried randomly at each node
   ## replace      = (boolean) if TRUE bootstrap sampling (with replacements)
   ##                is performed, else subsampling (without replacements)
-  ## classwt      = list of priors of the classes in the categorical variables
+  ## class.weights      = list of priors of the classes in the categorical variables
   ## cutoff       = list of class cutoffs for each categorical variable
   ## strata       = list of (factor) variables used for stratified sampling
-  ## sampsize     = list of size(s) of sample to draw
+  ## sample.fraction     = list of size(s) of sample.fraction to draw
   ## nodesize     = minimum size of terminal nodes, vector of length 2, with
   ##                number for continuous variables in the first entry and
   ##                number for categorical variables in the second entry
@@ -43,14 +45,16 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
   ## stop in case of wrong inputs passed to randomForest
   n <- nrow(xmis)
   p <- ncol(xmis)
-  if (!is.null(classwt))
-    stopifnot(length(classwt) == p, typeof(classwt) == 'list')
+  col_names <- colnames(xmis)
+
+  if (!is.null(class.weights))
+    stopifnot(length(class.weights) == p, typeof(class.weights) == 'list')
   if (!is.null(cutoff))
     stopifnot(length(cutoff) == p, typeof(cutoff) == 'list')
   if (!is.null(strata))
     stopifnot(length(strata) == p, typeof(strata) == 'list')
-  if (!is.null(nodesize))
-    stopifnot(length(nodesize) == 2)
+  #if (!is.null(nodesize))
+  #  stopifnot(length(nodesize) == 2)
 
   ## remove completely missing variables
   if (any(apply(is.na(xmis), 2, sum) == n)){
@@ -159,117 +163,107 @@ missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
       convOld <- convNew
       OOBerrOld <- OOBerr
     }
-    if (verbose){
-      cat("  missForest iteration", iter+1, "in progress...")
-    }
+
+    cat("  missForest iteration", iter+1, "in progress...")
+
     t.start <- proc.time()
     ximp.old <- ximp
 
     for (s in 1 : p) {
       varInd <- sort.j[s]
 
-        obsi <- !NAloc[, varInd]
-        misi <- NAloc[, varInd]
-        obsY <- ximp[obsi, varInd]
-        obsX <- ximp[obsi, seq(1, p)[-varInd]]
-        misX <- ximp[misi, seq(1, p)[-varInd]]
-        typeY <- varType[varInd]
-        if (typeY == "numeric") {
+      obsi <- !NAloc[, varInd]
+      misi <- NAloc[, varInd]
+      obsY <- ximp[obsi, varInd]
+      obsX <- ximp[obsi, seq(1, p)[-varInd]]
+      misX <- ximp[misi, seq(1, p)[-varInd]]
+      typeY <- varType[varInd]
+      if (typeY == "numeric") {
 
-          #RF <- randomForest( x = obsX,
-          #                    y = obsY,
-          #                    ntree = ntree,
-          #                    mtry = mtry,
-          #                    replace = replace,
-          #                    sampsize = if (!is.null(sampsize)) sampsize[[varInd]] else
-          #                      if (replace) nrow(obsX) else ceiling(0.632 * nrow(obsX)),
-          #                    nodesize = if (!is.null(nodesize)) nodesize[1] else 1,
-          #                    maxnodes = if (!is.null(maxnodes)) maxnodes else NULL)
-          #
-          RF <- ranger(formula = reformulate(colnames(obsX),
-                                             response = colnames(ximp)[!colnames(ximp) %in% colnames(obsX)]),
-                       data = ximp,
+        #RF <- randomForest( x = obsX,
+        #                    y = obsY,
+        #                    ntree = ntree,
+        #                    mtry = mtry,
+        #                    replace = replace,
+        #                    sampsize = if (!is.null(sampsize)) sampsize[[varInd]] else
+        #                      if (replace) nrow(obsX) else ceiling(0.632 * nrow(obsX)),
+        #                    nodesize = if (!is.null(nodesize)) nodesize[1] else 1,
+        #                    maxnodes = if (!is.null(maxnodes)) maxnodes else NULL)
+        #
+        RF <- ranger(x = obsX,
+                     y = obsY,
+                     num.trees = ntree,
+                     mtry = mtry,
+                     replace = replace,
+                     sample.fraction = if (!is.null(sample.fraction)) sample.fraction else
+                       if (replace) 1 else 0.632)
+        #min.node.size = if (!is.null(nodesize)) nodesize[1] else 1,
+        #max.depth = if (!is.null(maxnodes)) maxnodes else NULL) # unsure of this, to check
+        ## record out-of-bag error
+        #OOBerror[varInd] <- RF$mse[ntree]
+        OOBerror[varInd] <- RF$prediction.error
+        # Overall out of bag prediction error. For classification this is the fraction of missclassified samples,
+        # for probability estimation the Brier score, for regression the mean squared error
+        # and for survival one minus Harrell's C-index.
+
+        # save model
+        models[[iter + 1]][[varInd]] <- RF
+
+        # misY <- predict(RF, misX)
+        if (nrow(misX) > 0) { # if the column is not complete
+          misY <- predict(RF, misX)$predictions
+        } else {
+          misY <- c()
+        }
+
+      } else {
+        obsY <- factor(obsY)
+        summarY <- summary(obsY)
+        if (length(summarY) == 1) {
+          misY <- factor(rep(names(summarY), sum(misi)))
+        } else {
+          #RF <- randomForest(x = obsX,
+          #                   y = obsY,
+          #                   ntree = ntree,
+          #                   mtry = mtry,
+          #                   replace = replace,
+          #                   classwt = if (!is.null(classwt)) classwt[[varInd]] else
+          #                     rep(1, nlevels(obsY)),
+          #                   cutoff = if (!is.null(cutoff)) cutoff[[varInd]] else
+          #                     rep(1 / nlevels(obsY), nlevels(obsY)),
+          #                   strata = if (!is.null(strata)) strata[[varInd]] else obsY,
+          #                   sampsize = if (!is.null(sampsize)) sampsize[[varInd]] else
+          #                     if (replace) nrow(obsX) else ceiling(0.632 * nrow(obsX)),
+          #                   nodesize = if (!is.null(nodesize)) nodesize[2] else 5,
+          #                   maxnodes = if (!is.null(maxnodes)) maxnodes else NULL)
+
+          RF <- ranger(x = obsX,
+                       y = obsY,
                        num.trees = ntree,
                        mtry = mtry,
                        replace = replace,
-                       #sampsize = if (!is.null(sampsize)) sampsize[[varInd]] else
-                       #  if (replace) nrow(obsX) else ceiling(0.632 * nrow(obsX)),
-                       sample.fraction = if (!is.null(sampsize)) ceiling(sampsize[[varInd]]/nrow(obsX)) else
-                         if (replace) 1 else 0.632,
-                       min.node.size = if (!is.null(nodesize)) nodesize[1] else 1,
-                       max.depth = if (!is.null(maxnodes)) maxnodes else NULL) # unsure of this, to check
+                       class.weights = if (!is.null(class.weights)) class.weights[[varInd]], # TODO: test this and cutoff and strata
+                       sample.fraction = if (!is.null(sample.fraction)) sample.fraction else
+                         if (replace) 1 else 0.632)
+          #min.node.size = if (!is.null(nodesize)) nodesize[2] else 5,
+          #max.depth = if (!is.null(maxnodes)) maxnodes else NULL)
           ## record out-of-bag error
-          #OOBerror[varInd] <- RF$mse[ntree]
+          #OOBerror[varInd] <- RF$err.rate[[ntree, 1]]
           OOBerror[varInd] <- RF$prediction.error
-          # Overall out of bag prediction error. For classification this is the fraction of missclassified samples,
-          # for probability estimation the Brier score, for regression the mean squared error
-          # and for survival one minus Harrell's C-index.
 
           # save model
           models[[iter + 1]][[varInd]] <- RF
 
-          # misY <- predict(RF, misX)
+          ## predict missing parts of Y
+          #misY <- predict(RF, misX)
           if (nrow(misX) > 0) { # if the column is not complete
             misY <- predict(RF, misX)$predictions
           } else {
             misY <- c()
           }
-
-        } else {
-          obsY <- factor(obsY)
-          summarY <- summary(obsY)
-          if (length(summarY) == 1) {
-            misY <- factor(rep(names(summarY), sum(misi)))
-          } else {
-            #RF <- randomForest(x = obsX,
-            #                   y = obsY,
-            #                   ntree = ntree,
-            #                   mtry = mtry,
-            #                   replace = replace,
-            #                   classwt = if (!is.null(classwt)) classwt[[varInd]] else
-            #                     rep(1, nlevels(obsY)),
-            #                   cutoff = if (!is.null(cutoff)) cutoff[[varInd]] else
-            #                     rep(1 / nlevels(obsY), nlevels(obsY)),
-            #                   strata = if (!is.null(strata)) strata[[varInd]] else obsY,
-            #                   sampsize = if (!is.null(sampsize)) sampsize[[varInd]] else
-            #                     if (replace) nrow(obsX) else ceiling(0.632 * nrow(obsX)),
-            #                   nodesize = if (!is.null(nodesize)) nodesize[2] else 5,
-            #                   maxnodes = if (!is.null(maxnodes)) maxnodes else NULL)
-
-            RF <- ranger(formula = reformulate(colnames(obsX),
-                                                     response = colnames(ximp)[!colnames(ximp) %in% colnames(obsX)]),
-                               data = ximp,
-                               num.trees = ntree,
-                               mtry = mtry,
-                               replace = replace,
-                               class.weights = if (!is.null(classwt)) classwt[[varInd]] else
-                                 rep(1, nlevels(obsY)), # TODO: test this and cutoff and strata
-                               #cutoff = if (!is.null(cutoff)) cutoff[[varInd]] else
-                               #   rep(1 / nlevels(obsY), nlevels(obsY)),
-                               # strata = if (!is.null(strata)) strata[[varInd]] else obsY,
-                               #sampsize = if (!is.null(sampsize)) sampsize[[varInd]] else
-                               #   if (replace) nrow(obsX) else ceiling(0.632 * nrow(obsX)),
-                               sample.fraction = if (!is.null(sampsize)) ceiling(sampsize[[varInd]]/nrow(obsX)) else
-                                 if (replace) 1 else 0.632,
-                               min.node.size = if (!is.null(nodesize)) nodesize[2] else 5,
-                               max.depth = if (!is.null(maxnodes)) maxnodes else NULL)
-            ## record out-of-bag error
-            #OOBerror[varInd] <- RF$err.rate[[ntree, 1]]
-            OOBerror[varInd] <- RF$prediction.error
-
-            # save model
-            models[[iter + 1]][[varInd]] <- RF
-
-            ## predict missing parts of Y
-            #misY <- predict(RF, misX)
-            if (nrow(misX) > 0) { # if the column is not complete
-              misY <- predict(RF, misX)$predictions
-            } else {
-              misY <- c()
-            }
-          }
         }
-        ximp[misi, varInd] <- misY
+      }
+      ximp[misi, varInd] <- misY
 
     }
 
