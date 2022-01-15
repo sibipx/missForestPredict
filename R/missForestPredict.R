@@ -8,9 +8,9 @@
 missForestPredict <- function(missForestObj, newdata){
 
   # check new data columns (should be the same as in the saved object)
-  if(!all(sort(names(data_small_imp_new$init)) == sort(colnames(newdata))))
+  if(!all(sort(names(missForestObj$init)) == sort(colnames(newdata))))
     stop("Column names for new data should be the same as in the imputation initializtion")
-  if(!all(unlist(lapply(lapply(data_small_imp_new$models, names),
+  if(!all(unlist(lapply(lapply(missForestObj$models, names),
                         function(x) sort(x) == sort(colnames(newdata))))))
     stop("Column names for new data should be the same as in the imputation initializtion")
 
@@ -25,6 +25,7 @@ missForestPredict <- function(missForestObj, newdata){
 
   NAloc <- is.na(newdata)
   n_iter <- length(missForestObj$models)
+  if (n_iter < missForestObj$maxiter) n_iter <- n_iter - 1 # take up to the model that converged (not the last one that was worse)
   impute_sequence <- missForestObj$impute_sequence
 
   # impute iteratively

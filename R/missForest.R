@@ -347,6 +347,8 @@ missForest <- function(xmis, maxiter = 10, ntree = 500, variablewise = FALSE,
   out$init <- var_single_init
   out$models <- models
   out$impute_sequence <- col_names[sort.j]
+  out$iter <- iter
+  out$maxiter <- maxiter
 
   class(out) <- 'missForest'
   return(out)
