@@ -6,7 +6,7 @@
 ## Author: D.Stekhoven, stekhoven@stat.math.ethz.ch
 ##############################################################################
 
-mixError <- function(ximp, xmis, xtrue)
+mixError <- function(ximp, xmis, xtrue, variableWise = FALSE)
 {
   ## Purpose:
   ## Calculates the difference between to matrices. For all numeric
@@ -53,5 +53,22 @@ mixError <- function(ximp, xmis, xtrue)
       }
     }
   }
+
+  if (variableWise) {
+    p <- ncol(ximp)
+    err <- rep(Inf, p)
+    for (i in 1:p){
+      if (x.types[i] == "numeric") {
+        #err[i] <- mse(ximp[,i], xmis[,i], xtrue[,i])
+        mis <- is.na(xmis[,i])
+        #sqrt(mean((ximp[mis,i] - xtrue[mis,i])^{2}) / var(xtrue[mis,i]))
+        err[i] <- mean((ximp[mis,i] - xtrue[mis,i])^{2})
+      } else { # factor
+        err[i] <- NULL
+      }
+    }
+    names(err) <- rep("MSE", p)
+  }
+
   return(err)
 }
