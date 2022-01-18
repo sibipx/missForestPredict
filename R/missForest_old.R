@@ -1,12 +1,22 @@
-##
-## MissForest - nonparametric missing value imputation for mixed-type data
-##
-## This R script contains the actual missForest function.
-##
-## Author: D.Stekhoven, stekhoven@nexus.ethz.ch
-##
-## Acknowledgement: Steve Weston for input regarding parallel execution (2012)
-##############################################################################
+#' Title
+#'
+#' @param xmis foo
+#' @param maxiter foo
+#' @param ntree foo
+#' @param variablewise foo
+#' @param decreasing foo
+#' @param verbose foo
+#' @param mtry foo
+#' @param replace foo
+#' @param class.weights foo
+#' @param cutoff foo
+#' @param strata foo
+#' @param sample.fraction foo
+#' @param maxnodes foo
+#' @param xtrue foo
+#'
+#' @return
+#' @export
 
 missForest_old <- function(xmis, maxiter = 10, ntree = 500, variablewise = FALSE,
                        decreasing = FALSE, verbose = FALSE,

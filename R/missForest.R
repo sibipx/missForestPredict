@@ -37,51 +37,47 @@ missForest <- function(xmis,
   if (any(apply(is.na(xmis), 2, sum) == n))
     stop("There are variables completely missing in the input data. Remove these before imputation")
 
-  ## perform initial S.W.A.G. on xmis (mean imputation)
+  # TODO: if matrix, make dataframe. OR test with matrix
+  # TODO: should I support character or not? For now only factor
+
+  # check variable types
+  column_class <- function(x) ifelse(is.numeric(x), "numeric",
+                                     ifelse(is.factor(x), "factor", NA_character_))
+
+  varType <- unlist(lapply(xmis, column_class))
+
+  if (any(is.na(varType))) stop("Only numeric or factor columns are supported. Logical or other types are not supported.")
+
+  # perform initialization (mean/mode imputation)
   ximp <- xmis
-  varType <- character(p)
-  var_single_init <- list()
-  for (t.co in 1:p) {
-    if (is.numeric(xmis[[t.co]])) {
-      varType[t.co] <- 'numeric'
-      # keep mean
-      mean_col <- mean(xmis[,t.co], na.rm = TRUE)
-      var_single_init[[t.co]] <- mean_col
 
-      ximp[is.na(xmis[,t.co]),t.co] <- mean_col
-      next()
-    }
-    if (is.factor(xmis[[t.co]])) {
-      varType[t.co] <- 'factor'
-      ## take the level which is more 'likely' (majority vote)
-      max.level <- max(table(ximp[[t.co]]))
-      ## if there are several classes which are major, sample one at random
-      class.assign <- sample(names(which(max.level == summary(ximp[[t.co]]))), 1)
-      ## it shouldn't be the NA class
-      if (class.assign != "NA's") {
-        # keep mode
-        var_single_init[[t.co]] <- class.assign
-
-        ximp[is.na(xmis[[t.co]]),t.co] <- class.assign
-      } else {
-        while (class.assign == "NA's") {
-          class.assign <- sample(names(which(max.level ==
-                                               summary(ximp[[t.co]]))), 1)
-        }
-        # keep mode
-        var_single_init[[t.co]] <- class.assign
-
-        ximp[is.na(xmis[[t.co]]),t.co] <- class.assign
-      }
-      next()
-    }
-    stop(sprintf('column %s must be factor or numeric, is %s', names(xmis)[t.co], class(xmis[[t.co]])))
-  }
-
-  # keep column names
+  var_single_init <- vector("list", p)
   names(var_single_init) <- col_names
 
-  ## extract missingness pattern
+  for (col in col_names) {
+    if (varType[[col]] == "numeric") {
+      # keep mean
+      mean_col <- mean(xmis[,col], na.rm = TRUE)
+      var_single_init[[col]] <- mean_col
+
+      # initialize ximp column
+      ximp[is.na(xmis[,col]),col] <- mean_col
+    } else { # factor
+      # take maximum number of samples in one class (ignore NA)
+      max_level <- max(table(ximp[[col]], useNA = "no"))
+      summary_col <- summary(ximp[[col]][!is.na(ximp[[col]])])
+      # if there are several classes with equal number of samples, sample one at random
+      mode_col <- sample(names(which(max_level == summary_col)), 1)
+      # keep mode
+      var_single_init[[col]] <- mode_col
+
+      # initialize ximp column
+      ximp[is.na(xmis[[col]]),col] <- mode_col
+
+    }
+  }
+
+  # extract missingness pattern
   NAloc <- is.na(xmis)            # where are missings
   noNAvar <- apply(NAloc, 2, sum) # how many are missing in the vars
   sort.j <- order(noNAvar)        # indices of increasing amount of NA in vars
@@ -167,19 +163,13 @@ missForest <- function(xmis,
                      y = obsY,
                      num.trees = ntree,
                      mtry = mtry)
-        #min.node.size = if (!is.null(nodesize)) nodesize[1] else 1,
-        #max.depth = if (!is.null(maxnodes)) maxnodes else NULL) # unsure of this, to check
-        ## record out-of-bag error
-        #OOBerror[varInd] <- RF$mse[ntree]
+
+        ## record out-of-bag error (MSE)
         OOBerror[varInd] <- RF$prediction.error
-        # Overall out of bag prediction error. For classification this is the fraction of missclassified samples,
-        # for probability estimation the Brier score, for regression the mean squared error
-        # and for survival one minus Harrell's C-index.
 
         # save model
         models[[iter + 1]][[varInd]] <- RF
 
-        # misY <- predict(RF, misX)
         if (nrow(misX) > 0) { # if the column is not complete
           misY <- predict(RF, misX)$predictions
         } else {
@@ -214,9 +204,8 @@ missForest <- function(xmis,
                        class.weights = if (!is.null(class.weights)) class.weights[[varInd]], # TODO: test this and cutoff and strata
                        probability = TRUE)
 
-          ## record out-of-bag error
-          #OOBerror[varInd] <- RF$err.rate[[ntree, 1]]
-          OOBerror[varInd] <- RF$prediction.error # for probability = TRUE, BRIER
+          # record out-of-bag error (Brier score when probability = TRUE)
+          OOBerror[varInd] <- RF$prediction.error
 
           # save model
           models[[iter + 1]][[varInd]] <- RF
@@ -257,7 +246,6 @@ missForest <- function(xmis,
         #dist <- sum(as.character(as.matrix(ximp[, t.ind])) != as.character(as.matrix(ximp.old[, t.ind])))
         #convNew[t.co2] <- dist / (n * sum(varType == 'factor'))
 
-        # TODO: for each column
         # TODO: return probabilities
         # TODO: test for binary and categorical
 

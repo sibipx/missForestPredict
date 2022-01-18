@@ -2,4 +2,7 @@
 
 export(missForest)
 export(missForestPredict)
+export(missForestPredict_old)
+export(missForest_old)
 export(mixError)
+export(prodNA)

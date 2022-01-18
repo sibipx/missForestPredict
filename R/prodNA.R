@@ -1,11 +1,11 @@
-##
-## MissForest - nonparametric missing value imputation for mixed-type data
-##
-## This R script contains the function to produce missing values in a given
-## data set completely at random.
-##
-## Author: D.Stekhoven, stekhoven@stat.math.ethz.ch
-##############################################################################
+#' Title
+#'
+#' @param x matrix / dataframe
+#' @param noNA percentage of NA on each column
+#'
+#' @return matrix / dataframe with missing values
+#' @export
+
 
 prodNA <- function(x, noNA = 0.1){
   n <- nrow(x)
