@@ -4,10 +4,8 @@
 #' @param newdata new data to impute. The column names should be the same as in the imputation model
 #'
 #' @return an imputed dataframe
-#' @export
 
-
-missForestPredict <- function(missForestObj, newdata){
+missForestPredict_old <- function(missForestObj, newdata){
 
   # check new data columns (should be the same as in the saved object)
   if(!all(sort(names(missForestObj$init)) == sort(colnames(newdata))))
@@ -37,19 +35,7 @@ missForestPredict <- function(missForestObj, newdata){
     for (c in impute_sequence){
       if (any(NAloc[,c])){ # impute only missing columns
         model <- iter_models[[c]]
-
-        #if (class(ximp[,c]) == "factor"){
-        if (is(ximp[,c], "factor")){
-          # if factor, return factor
-          preds <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
-          levels <- colnames(preds)
-          preds <- apply(preds, 1, function(x) levels[which.max(x)])
-          ximp[NAloc[,c],c] <- preds
-
-        } else {
-
-          ximp[NAloc[,c],c] <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
-        }
+        ximp[NAloc[,c],c] <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
       }
     }
   }

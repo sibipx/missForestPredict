@@ -1,41 +1,69 @@
+##
+## MissForest - nonparametric missing value imputation for mixed-type data
+##
+## This R script contains the actual missForest function.
+##
+## Author: D.Stekhoven, stekhoven@nexus.ethz.ch
+##
+## Acknowledgement: Steve Weston for input regarding parallel execution (2012)
+##############################################################################
 
+missForest_old <- function(xmis, maxiter = 10, ntree = 500, variablewise = FALSE,
+                       decreasing = FALSE, verbose = FALSE,
+                       mtry = floor(sqrt(ncol(xmis))), replace = TRUE,
+                       class.weights = NULL, cutoff = NULL, strata = NULL,
+                       sample.fraction = NULL,
+                       #nodesize = NULL,
+                       maxnodes = NULL,
+                       xtrue = NA)
+{ ## ----------------------------------------------------------------------
+  ## Arguments:
+  ## xmis         = data matrix with missing values
+  ## maxiter      = stop after how many iterations (default = 10)
+  ## ntree        = how many trees are grown in the forest (default = 100)
+  ## variablewise = (boolean) return OOB errors for each variable separately
+  ## decreasing   = (boolean) if TRUE the columns are sorted with decreasing
+  ##                amount of missing values
+  ## verbose      = (boolean) if TRUE then missForest returns error estimates,
+  ##                runtime and if available true error during iterations
+  ## mtry         = how many variables should be tried randomly at each node
+  ## replace      = (boolean) if TRUE bootstrap sampling (with replacements)
+  ##                is performed, else subsampling (without replacements)
+  ## class.weights      = list of priors of the classes in the categorical variables
+  ## cutoff       = list of class cutoffs for each categorical variable
+  ## strata       = list of (factor) variables used for stratified sampling
+  ## sample.fraction     = list of size(s) of sample.fraction to draw
+  ## nodesize     = minimum size of terminal nodes, vector of length 2, with
+  ##                number for continuous variables in the first entry and
+  ##                number for categorical variables in the second entry
+  ## maxnodes     = maximum number of terminal nodes for individual trees
+  ## xtrue        = complete data matrix
+  ##
+  ## ----------------------------------------------------------------------
+  ## Author: Daniel Stekhoven, stekhoven@nexus.ethz.ch
 
-#' Imputes a matrix / dataframe and returns imputation models to be used on new observations
-#'
-#' @param xmis matrix / dataframe containing missing values
-#' @param maxiter maximum number of iterations
-#' @param ntree number of trees in the forest (default 500)
-#' @param variablewise logical; return OOB errors for each variable separately
-#' @param decreasing (boolean) if TRUE the columns are sorted with decreasing amount of missing values
-#' @param verbose (boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations
-#' @param mtry how many variables should be tried randomly at each node
-#' @param class.weights list of priors of the classes in the categorical variables
-#' @param xtrue complete data matrix
-#'
-#' @return
-#' @export
-
-missForest <- function(xmis,
-                       maxiter = 10,
-                       ntree = 500,
-                       variablewise = FALSE,
-                       decreasing = FALSE,
-                       verbose = FALSE,
-                       mtry = floor(sqrt(ncol(xmis))),
-                       class.weights = NULL,
-                       xtrue = NA) {
-
+  ## stop in case of wrong inputs passed to randomForest
   n <- nrow(xmis)
   p <- ncol(xmis)
   col_names <- colnames(xmis)
 
-  # TODO: review class.weights
   if (!is.null(class.weights))
     stopifnot(length(class.weights) == p, typeof(class.weights) == 'list')
+  if (!is.null(cutoff))
+    stopifnot(length(cutoff) == p, typeof(cutoff) == 'list')
+  if (!is.null(strata))
+    stopifnot(length(strata) == p, typeof(strata) == 'list')
+  #if (!is.null(nodesize))
+  #  stopifnot(length(nodesize) == 2)
 
   ## remove completely missing variables
-  if (any(apply(is.na(xmis), 2, sum) == n))
-    stop("There are variables completely missing in the input data. Remove these before imputation")
+  if (any(apply(is.na(xmis), 2, sum) == n)){
+    indCmis <- which(apply(is.na(xmis), 2, sum) == n)
+    xmis <- xmis[,-indCmis]
+    p <- ncol(xmis)
+    cat('  removed variable(s)', indCmis,
+        'due to the missingness of all entries\n')
+  }
 
   ## perform initial S.W.A.G. on xmis (mean imputation)
   ximp <- xmis
@@ -121,8 +149,7 @@ missForest <- function(xmis,
     if (k == 1){
       (convNew < convOld) & (iter < maxiter)
     } else {
-      #((convNew[1] < convOld[1]) | (convNew[2] < convOld[2])) & (iter < maxiter)
-      (convNew[1] + convNew[2] < convOld[1] + convOld[2])  & (iter < maxiter)
+      ((convNew[1] < convOld[1]) | (convNew[2] < convOld[2])) & (iter < maxiter)
     }
   }
 
@@ -166,7 +193,10 @@ missForest <- function(xmis,
         RF <- ranger(x = obsX,
                      y = obsY,
                      num.trees = ntree,
-                     mtry = mtry)
+                     mtry = mtry,
+                     replace = replace,
+                     sample.fraction = if (!is.null(sample.fraction)) sample.fraction else
+                       if (replace) 1 else 0.632)
         #min.node.size = if (!is.null(nodesize)) nodesize[1] else 1,
         #max.depth = if (!is.null(maxnodes)) maxnodes else NULL) # unsure of this, to check
         ## record out-of-bag error
@@ -211,12 +241,15 @@ missForest <- function(xmis,
                        y = obsY,
                        num.trees = ntree,
                        mtry = mtry,
+                       replace = replace,
                        class.weights = if (!is.null(class.weights)) class.weights[[varInd]], # TODO: test this and cutoff and strata
-                       probability = TRUE)
-
+                       sample.fraction = if (!is.null(sample.fraction)) sample.fraction else
+                         if (replace) 1 else 0.632)
+          #min.node.size = if (!is.null(nodesize)) nodesize[2] else 5,
+          #max.depth = if (!is.null(maxnodes)) maxnodes else NULL)
           ## record out-of-bag error
           #OOBerror[varInd] <- RF$err.rate[[ntree, 1]]
-          OOBerror[varInd] <- RF$prediction.error # for probability = TRUE, BRIER
+          OOBerror[varInd] <- RF$prediction.error
 
           # save model
           models[[iter + 1]][[varInd]] <- RF
@@ -224,13 +257,7 @@ missForest <- function(xmis,
           ## predict missing parts of Y
           #misY <- predict(RF, misX)
           if (nrow(misX) > 0) { # if the column is not complete
-            #misY <- predict(RF, misX)$predictions
-
-            # if factor, return factor
-            preds <- predict(RF, misX)$predictions
-            levels <- colnames(preds)
-            misY <- apply(preds, 1, function(x) levels[which.max(x)])
-
+            misY <- predict(RF, misX)$predictions
           } else {
             misY <- c()
           }
@@ -254,42 +281,8 @@ missForest <- function(xmis,
       if (t.type == 'numeric'){
         convNew[t.co2] <- sum((ximp[, t.ind] - ximp.old[, t.ind])^2) / sum(ximp[, t.ind]^2)
       } else {
-        #dist <- sum(as.character(as.matrix(ximp[, t.ind])) != as.character(as.matrix(ximp.old[, t.ind])))
-        #convNew[t.co2] <- dist / (n * sum(varType == 'factor'))
-
-        # TODO: for each column
-        # TODO: return probabilities
-        # TODO: test for binary and categorical
-
-        # gets a factor variable, returns a matrix of binary variables
-        make_binary <- function(x) {
-
-          unique_vals <- levels(x)
-          x_binary <- matrix(ncol = length(unique_vals), nrow = length(x))
-
-          for (i in 1:length(unique_vals)) {
-            x_binary[,i] <- ifelse(x == unique_vals[[i]], 1, 0)
-          }
-
-          return(x_binary)
-
-        }
-
-        conv_new_cols <- c()
-
-        for (t in t.ind){
-
-          ximp_old_binary <- make_binary(ximp.old[, t])
-          ximp_new_binary <- make_binary(ximp[, t])
-
-          mean_observed <- mean(ximp_old_binary) # old
-          bs_baseline <- mean((mean_observed - ximp_old_binary)^2)
-
-          conv_new_cols <- c(conv_new_cols, mean((ximp_new_binary - ximp_old_binary)^2) / bs_baseline)
-          # this should be 1 - BSS
-        }
-
-        convNew[t.co2] <- mean(conv_new_cols)
+        dist <- sum(as.character(as.matrix(ximp[, t.ind])) != as.character(as.matrix(ximp.old[, t.ind])))
+        convNew[t.co2] <- dist / (n * sum(varType == 'factor'))
       }
       t.co2 <- t.co2 + 1
     }

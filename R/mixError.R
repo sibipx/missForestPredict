@@ -1,10 +1,13 @@
-##
-## MissForest - nonparametric missing value imputation for mixed-type data
-##
-## This R script contains the error function for mixed-type data.
-##
-## Author: D.Stekhoven, stekhoven@stat.math.ethz.ch
-##############################################################################
+
+#' Title
+#'
+#' @param ximp imputed matrix / dataframe
+#' @param xmis original matrix / dataframe with missing values
+#' @param xtrue true matrix / dataframe (or any matrix to be compared with ximp)
+#' @param variableWise logical; should the errors be returned for each variable (TRUE) or aggregated by variable type (numeric / factor)
+#'
+#' @return named vector of errors
+#' @export
 
 mixError <- function(ximp, xmis, xtrue, variableWise = FALSE)
 {
