@@ -2,7 +2,7 @@
 title: "Using the missForestPredict package"
 author: "Elena Albu"
 date: "`r Sys.Date()`"
-output: rmarkdown::pdf_document
+output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Using the missForestPredict package}
   %\VignetteEngine{knitr::rmarkdown}
@@ -53,9 +53,10 @@ TODO
 
 TODO
 
-**Support for tibble, dataframe and matrix**
 
-TODO
+**Support for dataframe and tibble**
+
+Both dataframe (data.frame class) and tibble (tbl_df class) are supported as input for the package functions.
 
 ## How to install
 

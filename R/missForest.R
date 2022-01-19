@@ -23,7 +23,6 @@ missForest <- function(xmis,
                        xtrue = NA,
                        ...){
 
-  n <- nrow(xmis)
   p <- ncol(xmis)
   col_names <- colnames(xmis)
 
@@ -32,7 +31,7 @@ missForest <- function(xmis,
     stopifnot(length(class.weights) == p, typeof(class.weights) == 'list')
 
   ## remove completely missing variables
-  if (any(apply(is.na(xmis), 2, sum) == n))
+  if (any(apply(is.na(xmis), 2, sum) == nrow(xmis)))
     stop("There are variables completely missing in the input data. Remove these before imputation")
 
   # TODO: if matrix, make dataframe. OR test with matrix
@@ -55,22 +54,22 @@ missForest <- function(xmis,
   for (col in col_names) {
     if (varType[[col]] == "numeric") {
       # keep mean
-      mean_col <- mean(xmis[,col], na.rm = TRUE)
+      mean_col <- mean(xmis[, col, drop = TRUE], na.rm = TRUE)
       var_single_init[[col]] <- mean_col
 
       # initialize ximp column
-      ximp[is.na(xmis[,col]),col] <- mean_col
+      ximp[is.na(xmis[, col, drop = TRUE]), col] <- mean_col
     } else { # factor
       # take maximum number of samples in one class (ignore NA)
-      max_level <- max(table(ximp[[col]], useNA = "no"))
-      summary_col <- summary(ximp[[col]][!is.na(ximp[[col]])])
+      max_level <- max(table(ximp[, col, drop = TRUE], useNA = "no"))
+      summary_col <- summary(ximp[!is.na(ximp[, col, drop = TRUE]), col, drop = TRUE])
       # if there are several classes with equal number of samples, sample one at random
       mode_col <- sample(names(which(max_level == summary_col)), 1)
       # keep mode
       var_single_init[[col]] <- mode_col
 
       # initialize ximp column
-      ximp[is.na(xmis[[col]]),col] <- mode_col
+      ximp[is.na(xmis[, col, drop = TRUE]),col] <- mode_col
 
     }
   }
@@ -125,7 +124,7 @@ missForest <- function(xmis,
 
       obsi <- !NAloc[, col]
       misi <- NAloc[, col]
-      obsY <- ximp[obsi, col]
+      obsY <- ximp[obsi, col, drop = TRUE] # ximp[obsi, col] does not support tibble
       obsX <- ximp[obsi, names(ximp)!=col]
       misX <- ximp[misi, names(ximp)!=col]
 
@@ -197,8 +196,8 @@ missForest <- function(xmis,
         # TODO: alternative: only check for misi?
       } else {
 
-        ximp_old_binary <- make_binary(ximp.old[, col])
-        ximp_new_binary <- make_binary(ximp[, col])
+        ximp_old_binary <- make_binary(ximp.old[, col, drop = TRUE]) # ximp.old[, col, , drop = TRUE] // ximp.old[[col]]
+        ximp_new_binary <- make_binary(ximp[, col, drop = TRUE])
 
         mean_observed <- mean(ximp_old_binary) # old
         bs_baseline <- mean((mean_observed - ximp_old_binary)^2)

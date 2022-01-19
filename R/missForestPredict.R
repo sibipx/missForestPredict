@@ -19,7 +19,7 @@ missForestPredict <- function(missForestObj, newdata){
   # initialize
   ximp <- newdata
   for (c in names(missForestObj$init)){
-    ximp[is.na(ximp[,c]),c] <- missForestObj$init[[c]]
+    ximp[is.na(ximp[,c, drop = TRUE]),c] <- missForestObj$init[[c]]
   }
 
   # check that initialization is complete
@@ -39,7 +39,7 @@ missForestPredict <- function(missForestObj, newdata){
         model <- iter_models[[c]]
 
         #if (class(ximp[,c]) == "factor"){
-        if (is(ximp[,c], "factor")){
+        if (is(ximp[, c, drop = TRUE], "factor")){
           # if factor, return factor
           preds <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
           levels <- colnames(preds)
