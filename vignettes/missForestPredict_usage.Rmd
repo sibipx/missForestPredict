@@ -1,0 +1,104 @@
+---
+title: "Using the missForestPredict package"
+author: "Elena Albu"
+date: "`r Sys.Date()`"
+output: rmarkdown::pdf_document
+vignette: >
+  %\VignetteIndexEntry{Using the missForestPredict package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+## What is this document?
+
+The goal of this document is to highlight the functionality implemented in the package missForestPredict and to guide the user in using the functions in this package.
+
+## Package information
+
+The package missForestPredict implements the missing data imputation algorithm used in the R package missForest (@stekhoven2012missforest) with adaptations for prediction settings. The function missForest is used to impute a (training) dataset with missing values and to learn imputations models that can be later used for imputing new observations. The function missForestPredict is used to impute one or multiple new observations (test set) using the models learned on the training data. The word Predict in the function name should not misguide the user. The function does not perform prediction of an outcome and is agnostic on whether the desired outcome for a prediction model is part of the training data or not; it will treat all columns of the provided data as variables. 
+
+## Package functionality
+
+**Fast implementation**
+
+The imputation algorithm is based on random forests (@breiman01) as implemented in the ranger R package (@JSSv077i01). Ranger provides a fast implementation of random forests suitable for large datasets as well as high dimensional data. 
+
+**Saved models and initailization**
+
+The missing data in each column is initialized with a mean/mode imputation or a custom imputation scheme (TODO). Each variable is then imputed using the iterative algorithm of missForest (@stekhoven2012missforest) until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. 
+
+**Imputation of new observations**
+
+The models are applied iteratively to "predict" the missing values of each variable for the new observation, using the same number of iterations as used in the training data. Imputation initialization and models are "learned" also for variables with no missing values in the original (training) data. This allows for unfortunate situations in which new observations have different missing patterns than the one encountered in the training data (for example, because of accidental registration errors or because of unfortunate train / test split in which all mising values of a variable with low missingness fall in the test set).
+
+**Convergence criteria**
+
+TDOO
+
+**Imputation error monitoring**
+
+TODO
+
+**Extended options for binary variables**
+
+TODO
+
+**Support for tibble, dataframe and matrix**
+
+TODO
+
+## How to install
+
+TDOO
+
+
+# Missing Value Imputation
+
+# Advanced stuff?
+
+## Vignette Info
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))

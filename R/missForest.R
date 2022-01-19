@@ -4,10 +4,12 @@
 #'
 #' @param xmis matrix / dataframe containing missing values
 #' @param maxiter maximum number of iterations
+#' @param variablewise TODO: get rid of this
 #' @param decreasing (boolean) if TRUE the columns are sorted with decreasing amount of missing values
 #' @param verbose (boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations
 #' @param class.weights list of priors of the classes in the categorical variables
 #' @param xtrue complete data matrix
+#' @param ... other arguments passed to ranger function
 #'
 #' @return
 #' @export

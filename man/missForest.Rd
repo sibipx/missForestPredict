@@ -7,13 +7,12 @@
 missForest(
   xmis,
   maxiter = 10,
-  ntree = 500,
   variablewise = FALSE,
   decreasing = FALSE,
   verbose = FALSE,
-  mtry = floor(sqrt(ncol(xmis))),
   class.weights = NULL,
-  xtrue = NA
+  xtrue = NA,
+  ...
 )
 }
 \arguments{
@@ -21,15 +20,9 @@ missForest(
 
 \item{maxiter}{maximum number of iterations}
 
-\item{ntree}{number of trees in the forest (default 500)}
-
-\item{variablewise}{logical; return OOB errors for each variable separately}
-
 \item{decreasing}{(boolean) if TRUE the columns are sorted with decreasing amount of missing values}
 
 \item{verbose}{(boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations}
-
-\item{mtry}{how many variables should be tried randomly at each node}
 
 \item{class.weights}{list of priors of the classes in the categorical variables}
 
