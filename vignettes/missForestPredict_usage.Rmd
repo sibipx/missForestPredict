@@ -39,11 +39,28 @@ The missing data in each column is initialized with a mean/mode imputation or a 
 
 **Imputation of new observations**
 
-The models are applied iteratively to "predict" the missing values of each variable for the new observation, using the same number of iterations as used in the training data. Imputation initialization and models are "learned" also for variables with no missing values in the original (training) data. This allows for unfortunate situations in which new observations have different missing patterns than the one encountered in the training data (for example, because of accidental registration errors or because of unfortunate train / test split in which all mising values of a variable with low missingness fall in the test set).
+The models are applied iteratively to "predict" the missing values of each variable for the new observation, using the same number of iterations as used in the training data. Imputation initialization and models are "learned" also for variables with no missing values in the original (training) data. This allows for unfortunate situations in which new observations have different missing patterns than the one encountered in the training data (for example, because of accidental registration errors or because of unfortunate train / test split in which all missing values of a variable with low missingness fall in the test set).
 
 **Convergence criteria**
 
-TDOO
+At each iteration the out-of-bag (OOB) error is calculated for each variable separately. Then... average / weighted average (TODO?)
+
+The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score or Ranked Probability Skill Score - cite Wilks?).
+
+Wilks, D. S. (2005) Statistical Methods in the Atmospheric Sciences Chapter 7, ...
+
+Continuous variables:
+
+$1 - x$
+
+Binary variables:
+
+$1 - x$
+
+Categorical variables (more than 2 categories):
+
+$1 - x$
+
 
 **Imputation error monitoring**
 
