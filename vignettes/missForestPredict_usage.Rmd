@@ -2,7 +2,7 @@
 title: "Using the missForestPredict package"
 author: "Elena Albu"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 vignette: >
   %\VignetteIndexEntry{Using the missForestPredict package}
   %\VignetteEngine{knitr::rmarkdown}
@@ -25,17 +25,17 @@ The goal of this document is to highlight the functionality implemented in the p
 
 ## Package information
 
-The package missForestPredict implements the missing data imputation algorithm used in the R package missForest (@stekhoven2012missforest) with adaptations for prediction settings. The function missForest is used to impute a (training) dataset with missing values and to learn imputations models that can be later used for imputing new observations. The function missForestPredict is used to impute one or multiple new observations (test set) using the models learned on the training data. The word "Predict" in the function name should not misguide the user. The function does not perform prediction of an outcome and is agnostic on whether the desired outcome for a prediction model is part of the training data or not; it will treat all columns of the provided data as variables.
+The package missForestPredict implements the missing data imputation algorithm used in the R package missForest [@stekhoven2012missforest] with adaptations for prediction settings. The function missForest is used to impute a (training) dataset with missing values and to learn imputations models that can be later used for imputing new observations. The function missForestPredict is used to impute one or multiple new observations (test set) using the models learned on the training data. The word "Predict" in the function name should not misguide the user. The function does not perform prediction of an outcome and is agnostic on whether the desired outcome for a prediction model is part of the training data or not; it will treat all columns of the provided data as variables.
 
 ## Package functionality
 
 **Fast implementation**
 
-The imputation algorithm is based on random forests (@breiman01) as implemented in the ranger R package (@JSSv077i01). Ranger provides a fast implementation of random forests suitable for large datasets as well as high dimensional data. 
+The imputation algorithm is based on random forests [@breiman01] as implemented in the ranger R package [@JSSv077i01]. Ranger provides a fast implementation of random forests suitable for large datasets as well as high dimensional data. 
 
 **Saved models and initialization**
 
-The missing data in each column is initialized with a mean/mode imputation or a custom imputation scheme (TODO). Each variable is then imputed using the iterative algorithm of missForest (@stekhoven2012missforest) until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. 
+The missing data in each column is initialized with a mean/mode imputation or a custom imputation scheme (TODO). Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. 
 
 **Imputation of new observations**
 
@@ -61,6 +61,22 @@ Categorical variables (more than 2 categories):
 
 $1 - x$
 
+Brier Skill Score for each category (one-versus-all) and then averaged. Also for binary.
+
+
+Variable type Metric                                                                                                      Metric 
+------------- -----------------------------------------------------------------------------------                         -----------
+Continuous    $\frac{\sum_{i=1}^{n}(x_i - \hat{x_i})^2}{\sum_{i=1}^{n} (x_i - \bar{x_i})^2}$                              $1 - R^2$     
+Binary        $\frac{BS}{BSref}$, $BS =\frac{1}{N}\sum_{i=1}^{N}(x_i-p_i)^2$, $BSref =\frac{1}{N}\sum_{i=1}^{N}(x_i-p)^2$ $1 - BSS$
+Categorical   $\frac{1}{K} \sum_{k=1}^{K}\frac{BS_k}{BSref_k}$, $K =$  no. of classes 
+
+Ordinal variables are treated as categorical.
+
+```{r}
+# $\frac{\sum_{j=1}^{K}\frac{\sum_{i=1}^{n}(x_i-\hat{x_i})^2}{\sum_{i=1}^{n}(x_i-\bar{x_i})^2}}{K}$ 
+```
+
+half of the originally proposed Brier score: [@brier1950verification]
 
 **Imputation error monitoring**
 

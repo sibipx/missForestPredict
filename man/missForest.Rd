@@ -20,6 +20,8 @@ missForest(
 
 \item{maxiter}{maximum number of iterations}
 
+\item{variablewise}{TODO: get rid of this}
+
 \item{decreasing}{(boolean) if TRUE the columns are sorted with decreasing amount of missing values}
 
 \item{verbose}{(boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations}
@@ -27,6 +29,8 @@ missForest(
 \item{class.weights}{list of priors of the classes in the categorical variables}
 
 \item{xtrue}{complete data matrix}
+
+\item{...}{other arguments passed to ranger function}
 }
 \value{
 

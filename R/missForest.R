@@ -84,11 +84,14 @@ missForest <- function(xmis,
   err_new <- rep(0, p)
   names(err_new) <- col_names
   #err_old <- rep(Inf, p)
-  err_old <- rep(1, p)
-  OOBerrOld <-  1
+  err_old <- rep(Inf, p) # was 1 for OOB 1 is as good as chance
+  #OOBerrOld <-  Inf # was 1 for OOB 1 is as good as chance
   names(err_old) <- col_names
   err_OOB <- numeric(p)
   names(err_OOB) <- col_names
+
+  err_OOB_corrected <- numeric(p)
+  names(err_OOB_corrected) <- col_names
 
   # gets a factor variable, returns a matrix of binary variables
   make_binary <- function(x) {
@@ -192,72 +195,25 @@ missForest <- function(xmis,
 
       # save convergence
       if (varType[col] == "numeric"){
-        #err_new[col] <- sum((ximp[, col] - ximp.old[, col])^2) / sum(ximp[, col]^2)
-        # TODO: alternative: only check for misi?
 
-        # normalized on old
-        #err_new[col] <- sum((ximp[, col] - ximp.old[, col])^2) / sum((ximp.old[, col] - mean(ximp.old[, col]))^2)
-        # normalized on new
-        #err_new[col] <- sum((ximp[, col] - ximp.old[, col])^2) / sum((ximp[, col] - mean(ximp[, col]))^2)
-        # only missing
-        #err_new[col] <- sum((ximp[misi, col] - ximp.old[misi, col])^2) / sum((ximp[misi, col] - mean(ximp[, col]))^2)
-        # OOB all
-        #err_new[col] <- err_OOB[col] / var(ximp[, col])
-        # OOB obs
         err_new[col] <- err_OOB[col] / var(ximp[obsi, col])
+        #err_new[col] <- nmse(RF$predictions, ximp[obsi, col]) # this should be the same
+        err_OOB_corrected[col] <- mse(RF$predictions, ximp[obsi, col])
 
       } else {
 
-        ximp_old_binary <- make_binary(ximp.old[, col, drop = TRUE]) # ximp.old[, col, , drop = TRUE] // ximp.old[[col]]
-        ximp_new_binary <- make_binary(ximp[, col, drop = TRUE])
 
-        ## normalized on old
-        #mean_observed <- mean(ximp_old_binary) # old
-        #bs_baseline <- mean((mean_observed - ximp_old_binary)^2)
-        #err_new[col] <- mean((ximp_new_binary - ximp_old_binary)^2) / bs_baseline
-        ## this should be 1 - BSS
-        #
-        ## normalized on new
-        #mean_observed <- mean(ximp_new_binary) # new
-        #bs_baseline <- mean((mean_observed - ximp_new_binary)^2)
-        #err_new[col] <- mean((ximp_new_binary - ximp_old_binary)^2) / bs_baseline
+        #ximp_old_binary <- make_binary(ximp.old[, col, drop = TRUE]) # ximp.old[, col, , drop = TRUE] // ximp.old[[col]]
+        #ximp_new_binary <- make_binary(ximp[, col, drop = TRUE])
 
-        # only missing
-        #mean_observed <- mean(ximp_new_binary) # new
-        #bs_baseline <- mean((mean_observed - ximp_new_binary[misi,])^2)
-        #err_new[col] <- mean((ximp_new_binary[misi,] - ximp_old_binary[misi,])^2) / bs_baseline
+        ximp_binary <- make_binary(ximp[, col, drop = TRUE])
 
-        # OOB
-        #mean_observed <- mean(ximp_new_binary[obsi,]) # new
-        #bs_baseline <- mean((mean_observed - ximp_new_binary[obsi,])^2)
-        #err_new[col] <- err_OOB[col] / bs_baseline
+        # BS(RF$predictions, ximp_new_binary[obsi,]) # multiclass.Brier - THIS!
+        # multiclass.Brier(RF$predictions, ximp[obsi,col]) # multiclass.Brier
+        # BSnorm(RF$predictions, ximp_new_binary[obsi,]) # THIS!
+        err_new[col] <- BSnorm(RF$predictions, ximp_binary[obsi,])
 
-        #inc = mean(ximp_new_binary[obsi,1])
-        #brier.max = inc * (1 - inc)^2 + (1 - inc) * inc^2
-        #1 - err_OOB[col]/brier.max
-
-        bs_refs <- c()
-        scores <- c()
-        for (i in 1:dim(ximp_new_binary)[[2]]){
-          m <- mean(ximp_new_binary[obsi,i])
-          bs_ref <- sum((ximp_new_binary[obsi,i] - m)^2)/length(ximp_new_binary[obsi,i])
-          bs_refs <- c(bs_refs, bs_ref)
-
-          # brier binary
-          #y = as.numeric(truth == positive)
-          #mean((y - probabilities)^2)
-
-          y <- ximp_new_binary[obsi,i]
-          brier_binary <- mean((y - RF$predictions[,i])^2)
-          nmse <- brier_binary/bs_ref
-          scores <- c(scores, nmse)
-
-        }
-        #bs_baseline <- mean(bs_refs)
-
-        #err_new[col] <- err_OOB[col] / bs_baseline
-
-        err_new[col] <- mean(scores)
+        err_OOB_corrected[col] <- BS(RF$predictions, ximp_binary[obsi,])/ncol(ximp_binary[obsi,])
 
       }
 
@@ -278,10 +234,11 @@ missForest <- function(xmis,
       if (any(!is.na(xtrue))){
         cat("    error(s):", err, "\n")
       }
-      cat("    OOB error(s) MSE:   ", err_OOB, "\n")
-      cat("    OOB error(s) NMSE:  ", err_new, "\n")
-      cat("    difference(s):      ", err_old - err_new, "\n")
-      cat("    difference(s) total:", sum(err_old) - sum(err_new) , "\n")
+      cat("    OOB error(s) MSE (ranger):    ", err_OOB, "\n")
+      cat("    OOB error(s) MSE (corrected): ", err_OOB_corrected, "\n")
+      cat("    OOB error(s) NMSE:            ", err_new, "\n")
+      cat("    difference(s):                ", err_old - err_new, "\n")
+      cat("    difference(s) total:          ", sum(err_old) - sum(err_new) , "\n")
 
       cat("    time:", delta.start[3], "seconds\n\n")
     }
