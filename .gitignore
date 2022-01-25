@@ -35,5 +35,5 @@ vignettes/*.pdf
 
 # Mac stuff
 .DS_Store
-/doc/
 /Meta/
+/doc/
