@@ -92,7 +92,13 @@ Both dataframe (data.frame class) and tibble (tbl_df class) are supported as inp
 
 ## How to install
 
-TODO
+The R package missforestpredict is for the moment only available on the KU Leuven gitlab. Only KU Leuven gitlab users can install the package.
+
+```{r, eval=FALSE}
+library(devtools)
+devtools::install_git('https://gitlab.kuleuven.be/u0143313/missforestpredict/')
+
+```
 
 # How to use the package
 
@@ -102,7 +108,7 @@ TODO
 
 **Diamonds data** The diamonds dataset from ggplot2 R package contains seven continuous variables and three categorical variables for N = 53940 diamonds
 
-c
+## Imputation of training and test set
 
 After installing the package you can load it in your R sessions with:
 
@@ -113,7 +119,6 @@ library(missForestPredict)
 We will load the iris dataset and split it in a training set (100 observations) and a test set (50 observations).
 
 ```{r}
-
 data(iris)
 
 N <- nrow(iris)
@@ -130,7 +135,6 @@ iris_test <- iris[id_test,]
 We produce 10% random missing values on each column in both the training and the test set. 
 
 ```{r}
-
 set.seed(2022)
 iris_train_miss <- prodNA(iris_train, noNA = 0.1)
 iris_test_miss <- prodNA(iris_test, noNA = 0.1)
@@ -143,7 +147,6 @@ head(iris_test_miss)
 We will impute the training set and learn the random forest imputation models at the same time using the function *missForest*. Observe that we set *verbose = TRUE* to monitor the number of iterations and the errors. More information on error monitoring is provided in a separate vignette. (TODO)
 
 ```{r}
-
 set.seed(2022)
 iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, verbose = TRUE)
 
@@ -152,7 +155,6 @@ iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, verbose 
 The imputed training set can be found by extracting ximp dataframe from the object.
 
 ```{r}
-
 iris_train_imp <- iris_train_imp_object$ximp
 
 head(iris_train_imp)
@@ -166,8 +168,8 @@ We will further impute the test set using the learned imputation models. The fun
 - imperatively predict the missing values of each variable using the learned random forest models for each iteration
 
 ```{r}
-
-iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, newdata = iris_test_miss)
+iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_test_miss)
 
 head(iris_test_imp)
 
@@ -178,13 +180,13 @@ head(iris_test_imp)
 *missForestPredict* can impute a new observation with missing values. 
 
 ```{r}
-
 single_observation <- iris_test_miss[1,]
 single_observation[1,2] <- NA
 
 print(single_observation)
 
-single_observation_imp <- missForestPredict::missForestPredict(iris_train_imp_object, newdata = single_observation)
+single_observation_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                               newdata = single_observation)
 
 print(single_observation_imp)
 
@@ -192,16 +194,16 @@ print(single_observation_imp)
 
 Imputation can be done even when all variables are missing for a single new observation. This is of course, not an ideal situation and probably not realistic, but it can be technically handled by the *missForestPredict* function. The observation will be initialized with the "mean observation" and the random forest models will impute iteratively. 
 
-*missForestPredict* package can impute observations with new missingness patterns not present in the training data as well as ariables with no missingness (complete) in training data. The iniialization and the random forest imputation models are "learned" for all variables in the dataset, regardless of the amount of missingness. The only condition is that the new observations follow the same data types as the ones in the training set. 
+*missForestPredict* package can impute observations with new missingness patterns not present in the training data as well as variables with no missingness (complete) in training data. The inialization and the random forest imputation models are "learned" for all variables in the dataset, regardless of the amount of missingness. The only condition is that the new observations follow the same data types as the ones in the training set. 
 
 ```{r}
-
 single_observation <- iris_test_miss[2,]
 single_observation[,1:4] <- NA_real_
 
 print(single_observation)
 
-single_observation_imp <- missForestPredict::missForestPredict(iris_train_imp_object, newdata = single_observation)
+single_observation_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                               newdata = single_observation)
 
 print(single_observation_imp)
 
@@ -213,7 +215,6 @@ print(single_observation_imp)
 The function *missForest* returns both the imputed training dataframe as well as the imputation models.
 
 ```{r}
-
 str(iris_train_imp_object, max.level = 1)
 
 ```
@@ -221,11 +222,11 @@ str(iris_train_imp_object, max.level = 1)
 The imputed training data is though not necessary for imputing the test set. To avoid storing further these data in the object, *ximp* can be set to NULL.
 
 ```{r}
-
 iris_train_imp <- iris_train_imp_object$ximp
 iris_train_imp_object$ximp <- NULL 
 
-iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, newdata = iris_test_miss)
+iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_test_miss)
 
 head(iris_test_imp)
 ```
@@ -237,7 +238,6 @@ Although *missForestPredict* benefits of the improved computation time of *range
 We will load the diamonds dataset, which contains more than 50000 observations and produce 30% missing values on each variable.
 
 ```{r}
-
 library(ggplot2)
 
 data(diamonds)
@@ -264,13 +264,15 @@ head(diamonds_test_miss)
 The function *missForest* supports additional arguments to be passed to the *ranger* function. By default, the default values of *ranger* are used. By default, the number of trees in the forest will be 500. This can be overridden by passing *num.trees = 100*, for example. Using less trees will prove to be computationally more efficient.
 
 ```{r}
-
 set.seed(2022)
-diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss, verbose = TRUE, num.trees = 100)
+diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss, 
+                                                           verbose = TRUE, 
+                                                           num.trees = 100)
 
 # impute test set
 diamonds_train_imp_object$ximp <- NULL 
-diamonds_test_imp <- missForestPredict::missForestPredict(diamonds_train_imp_object, newdata = diamonds_test_miss)
+diamonds_test_imp <- missForestPredict::missForestPredict(diamonds_train_imp_object,
+                                                          newdata = diamonds_test_miss)
 
 head(diamonds_test_imp)
 
@@ -279,7 +281,6 @@ head(diamonds_test_imp)
 Alternatively, the *maxiter* parameter can be set to a lower number (the default is 10).
 
 ```{r}
-
 #set.seed(2022)
 #diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss, verbose = TRUE, maxiter = 2)
 #
