@@ -49,11 +49,16 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue){
     misi <- NAloc[,col]
 
     if (varType[[col]] == "numeric") {
-      # calculate MSE
-      err_MSE[col] <- mse(ximp[misi,col], xtrue[misi,col])
 
-      # calculate NMSE
-      err_NMSE[col] <- nmse(ximp[misi,col], xtrue[misi,col])
+      if (length(ximp[misi,col]) > 0) {
+        # calculate MSE
+        err_MSE[col] <- mse(ximp[misi,col], xtrue[misi,col])
+        # calculate NMSE
+        err_NMSE[col] <- nmse(ximp[misi,col], xtrue[misi,col])
+      } else {
+        err_MSE[col] <- 0
+        err_NMSE[col] <- 0
+      }
 
     } else {
       # calculate BRIER

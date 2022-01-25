@@ -117,9 +117,10 @@ missForest <- function(xmis,
     if (iter != 0){
       err_old <- err_new
       OOBerrOld <- err_OOB
+      err_OOB_corrected_old <- err_OOB_corrected
     }
 
-    cat("  missForest iteration", iter+1, "in progress...")
+    if (verbose) cat("  missForest iteration", iter+1, "in progress...")
 
     t.start <- proc.time()
     ximp.old <- ximp
@@ -219,7 +220,7 @@ missForest <- function(xmis,
 
     }
 
-    cat('done!\n')
+    if (verbose) cat('done!\n')
 
     iter <- iter + 1
 
@@ -247,15 +248,15 @@ missForest <- function(xmis,
   ## produce output w.r.t. stopping rule
   if (iter == maxiter){
     if (any(is.na(xtrue))){
-      out <- list(ximp = ximp, OOBerror = err_OOB)
+      out <- list(ximp = ximp, OOBerror = err_OOB, err_OOB_corrected = err_OOB_corrected)
     } else {
-      out <- list(ximp = ximp, OOBerror = err_OOB, error = err)
+      out <- list(ximp = ximp, OOBerror = err_OOB, error = err, err_OOB_corrected = err_OOB_corrected)
     }
   } else {
     if (any(is.na(xtrue))){
-      out <- list(ximp = ximp.old, OOBerror = OOBerrOld)
+      out <- list(ximp = ximp.old, OOBerror = OOBerrOld, err_OOB_corrected = err_OOB_corrected_old)
     } else {
-      out <- list(ximp = ximp.old, OOBerror = OOBerrOld,
+      out <- list(ximp = ximp.old, OOBerror = OOBerrOld, err_OOB_corrected = err_OOB_corrected_old,
                   error = suppressWarnings(mixError(ximp.old, xmis, xtrue)))
     }
   }
@@ -266,6 +267,7 @@ missForest <- function(xmis,
   out$impute_sequence <- impute_sequence
   out$iter <- iter
   out$maxiter <- maxiter
+  #out$err_OOB_corrected <- err_OOB_corrected
 
   class(out) <- 'missForest'
   return(out)
