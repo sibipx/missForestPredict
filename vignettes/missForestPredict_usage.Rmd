@@ -2,7 +2,7 @@
 title: "Using the missForestPredict package"
 author: "Elena Albu"
 date: "`r Sys.Date()`"
-output: rmarkdown::pdf_document
+output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Using the missForestPredict package}
   %\VignetteEngine{knitr::rmarkdown}
@@ -45,42 +45,43 @@ The models are applied iteratively to "predict" the missing values of each varia
 
 At each iteration the out-of-bag (OOB) error is calculated for each variable separately. Then... average / weighted average (TODO?)
 
-The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score or Ranked Probability Skill Score - cite Wilks?).
-
-Wilks, D. S. (2005) Statistical Methods in the Atmospheric Sciences Chapter 7, ...
+The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score).
 
 Continuous variables:
 
-$1 - x$
+$NMSE = \frac{\sum_{i=1}^{N}(x_i - \hat{x_i})^2}{\sum_{i=1}^{N} (x_i - \bar{x})^2} = 1 - R^2$, $i = 1, 2, ... N$
 
-Binary variables:
+$\bar{x}$ = the mean value of variable x
 
-$1 - x$
+$\hat{x_i}$ = prediction (imputation) for observation i 
 
-Categorical variables (more than 2 categories):
+$N$ = number of observations
 
-$1 - x$
+Categorical variables:
 
-Brier Skill Score for each category (one-versus-all) and then averaged. Also for binary.
+$\frac{BS}{BSref} = 1 - BSS$
+
+$BS =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{ij} - x_{ij})^2$, $i = 1, 2, ... N$, $j = 1, 2, ... R$
+
+$BSref =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{j} - x_{ij})^2=1-\sum_{j=1}^{R}p_j^2$
+
+$p_{ij}$ = prediction (probability) for observation i and class j
+
+$p_{j}$ = proportion of the event in class j
+
+$N$ = number of observations
+
+$R$ = number of classes
+
+The Brier Score ($BS$) is calculates as the sum of squared distances between the prediction (as probability) and the true value (0 or 1) for each class. The reference Brier Score ($BSref$) is calculated as the Brier Score of a predictor that predicts the proportion of the event in each class [@brier1950verification].
 
 
-Variable type Metric                                                                                                      Metric 
-------------- -----------------------------------------------------------------------------------                         -----------
-Continuous    $\frac{\sum_{i=1}^{n}(x_i - \hat{x_i})^2}{\sum_{i=1}^{n} (x_i - \bar{x_i})^2}$                              $1 - R^2$     
-Binary        $\frac{BS}{BSref}$, $BS =\frac{1}{N}\sum_{i=1}^{N}(x_i-p_i)^2$, $BSref =\frac{1}{N}\sum_{i=1}^{N}(x_i-p)^2$ $1 - BSS$
-Categorical   $\frac{1}{K} \sum_{k=1}^{K}\frac{BS_k}{BSref_k}$, $K =$  no. of classes 
+TODO: Ordinal variables are treated as categorical?
 
-Ordinal variables are treated as categorical.
-
-```{r}
-# $\frac{\sum_{j=1}^{K}\frac{\sum_{i=1}^{n}(x_i-\hat{x_i})^2}{\sum_{i=1}^{n}(x_i-\bar{x_i})^2}}{K}$ 
-```
-
-half of the originally proposed Brier score: [@brier1950verification]
 
 **Imputation error monitoring**
 
-TODO
+TODO - separate vignette
 
 **Extended options for binary variables**
 
@@ -92,46 +93,10 @@ Both dataframe (data.frame class) and tibble (tbl_df class) are supported as inp
 
 ## How to install
 
-TDOO
-
+TODO
 
 # How to use the package
 
 # Advanced stuff?
 
-## Vignette Info
 
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
-
-## Styles
-
-
-## Figures
-
-The figure sizes have been customised so that you can easily put two images side-by-side. 
-
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
-```
-
-You can enable figure captions by `fig_caption: yes` in YAML:
-
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
-
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
-
-## More Examples
-
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
-
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
-```
-
-Also a quote using `>`:
-
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))
