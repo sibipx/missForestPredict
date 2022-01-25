@@ -18,6 +18,12 @@ missForestPredict <- function(missForestObj, newdata){
 
   # initialize
   ximp <- newdata
+
+  # make all integer columns double (imputed values might not be integer)
+  ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+
+  # TODO: give warning? test on diamonds
+
   for (c in names(missForestObj$init)){
     ximp[is.na(ximp[,c, drop = TRUE]),c] <- missForestObj$init[[c]]
   }

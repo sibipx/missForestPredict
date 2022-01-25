@@ -47,6 +47,11 @@ missForest <- function(xmis,
   # perform initialization (mean/mode imputation)
   ximp <- xmis
 
+  # make all integer columns double (imputed values might not be integer)
+  ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+
+  # TODO: give warning? test on diamonds
+
   var_single_init <- vector("list", p)
   names(var_single_init) <- col_names
 
@@ -199,7 +204,7 @@ missForest <- function(xmis,
 
         err_new[col] <- err_OOB[col] / var(ximp[obsi, col])
         #err_new[col] <- nmse(RF$predictions, ximp[obsi, col]) # this should be the same
-        err_OOB_corrected[col] <- mse(RF$predictions, ximp[obsi, col])
+        err_OOB_corrected[col] <- mse(RF$predictions, ximp[obsi, col, drop = TRUE])
 
       } else {
 
