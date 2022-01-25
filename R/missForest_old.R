@@ -174,7 +174,7 @@ missForest_old <- function(xmis, maxiter = 10, ntree = 500, variablewise = FALSE
       OOBerrOld <- OOBerr
     }
 
-    cat("  missForest iteration", iter+1, "in progress...")
+    if (verbose) cat("  missForest iteration", iter+1, "in progress...")
 
     t.start <- proc.time()
     ximp.old <- ximp
@@ -279,7 +279,7 @@ missForest_old <- function(xmis, maxiter = 10, ntree = 500, variablewise = FALSE
 
     names(models[[iter + 1]]) <- col_names
 
-    cat('done!\n')
+    if (verbose) cat('done!\n')
 
     iter <- iter + 1
     Ximp[[iter]] <- ximp
