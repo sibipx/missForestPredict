@@ -23,6 +23,7 @@ knitr::opts_chunk$set(
 
 The goal of this document is to highlight the functionality implemented in the package missForestPredict and to provide guidance for the usage of this package.
 
+
 ## Package information
 
 The package missForestPredict implements the missing data imputation algorithm used in the R package missForest [@stekhoven2012missforest] with adaptations for prediction settings. The function missForest is used to impute a (training) dataset with missing values and to learn imputations models that can be later used for imputing new observations. The function missForestPredict is used to impute one or multiple new observations (test set) using the models learned on the training data. The word "Predict" in the function name should not misguide the user. The function does not perform prediction of an outcome and is agnostic on whether the desired outcome for a prediction model is part of the training data or not; it will treat all columns of the provided data as variables.
