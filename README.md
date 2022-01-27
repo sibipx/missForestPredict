@@ -6,6 +6,24 @@ It uses a single convergence criteria for continuous and categorical variables, 
 
 It suitable for large and high dimensional datasets, as it s based on the ranger R package, which provides a fast C++ implementation of  random forests.
 
+Changes done (for my record):
+
+- use ranger iso randomForest
+
+- save initialization
+
+- save models
+
+- build models for non-missing variables
+
+- save models
+
+- changed convergence criteria: OOB iso apparent performance
+
+- changed convergence criteria: NMSE for both continuous and categorical variables (multiclass included)
+
+- better error monitoring (partially TODO)
+
 ## For the future...
 
 ## Contact us
