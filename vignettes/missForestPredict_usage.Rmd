@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 The goal of this document is to highlight the functionality implemented in the package missForestPredict and to provide guidance for the usage of this package.
 
-
+ 
 
 ## Package information
 
