@@ -37,24 +37,26 @@ missForestPredict <- function(missForestObj, newdata){
   impute_sequence <- missForestObj$impute_sequence
 
   # impute iteratively
-  for (i in 1:n_iter){
-    iter_models <- missForestObj$models[[i]]
+  if (n_iter > 0){
+    for (i in 1:n_iter){
+      iter_models <- missForestObj$models[[i]]
 
-    for (c in impute_sequence){
-      if (any(NAloc[,c])){ # impute only missing columns
-        model <- iter_models[[c]]
+      for (c in impute_sequence){
+        if (any(NAloc[,c])){ # impute only missing columns
+          model <- iter_models[[c]]
 
-        #if (class(ximp[,c]) == "factor"){
-        if (is(ximp[, c, drop = TRUE], "factor")){
-          # if factor, return factor
-          preds <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
-          levels <- colnames(preds)
-          preds <- apply(preds, 1, function(x) levels[which.max(x)])
-          ximp[NAloc[,c],c] <- preds
+          #if (class(ximp[,c]) == "factor"){
+          if (is(ximp[, c, drop = TRUE], "factor")){
+            # if factor, return factor
+            preds <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
+            levels <- colnames(preds)
+            preds <- apply(preds, 1, function(x) levels[which.max(x)])
+            ximp[NAloc[,c],c] <- preds
 
-        } else {
+          } else {
 
-          ximp[NAloc[,c],c] <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
+            ximp[NAloc[,c],c] <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
+          }
         }
       }
     }

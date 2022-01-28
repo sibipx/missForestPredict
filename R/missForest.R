@@ -8,7 +8,6 @@
 #' @param decreasing (boolean) if TRUE the columns are sorted with decreasing amount of missing values
 #' @param verbose (boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations
 #' @param class.weights list of priors of the classes in the categorical variables
-#' @param xtrue complete data matrix
 #' @param ... other arguments passed to ranger function
 #'
 #' @return
@@ -20,7 +19,6 @@ missForest <- function(xmis,
                        decreasing = FALSE,
                        verbose = FALSE,
                        class.weights = NULL,
-                       xtrue = NA,
                        ...){
 
   p <- ncol(xmis)
@@ -89,28 +87,15 @@ missForest <- function(xmis,
   err_new <- rep(0, p)
   names(err_new) <- col_names
   #err_old <- rep(Inf, p)
-  err_old <- rep(Inf, p) # was 1 for OOB 1 is as good as chance
-  #OOBerrOld <-  Inf # was 1 for OOB 1 is as good as chance
+  err_old <- rep(1, p) # was 1 for OOB 1 is as good as chance
+  OOBerrOld <-  1 # was 1 for OOB 1 is as good as chance
+  err_OOB_corrected_old <- 1
   names(err_old) <- col_names
   err_OOB <- numeric(p)
   names(err_OOB) <- col_names
 
   err_OOB_corrected <- numeric(p)
   names(err_OOB_corrected) <- col_names
-
-  # gets a factor variable, returns a matrix of binary variables
-  make_binary <- function(x) {
-
-    unique_vals <- levels(x)
-    x_binary <- matrix(ncol = length(unique_vals), nrow = length(x))
-
-    for (i in 1:length(unique_vals)) {
-      x_binary[,i] <- ifelse(x == unique_vals[[i]], 1, 0)
-    }
-
-    return(x_binary)
-
-  }
 
   models <- list()
 
@@ -144,24 +129,23 @@ missForest <- function(xmis,
 
         # record out-of-bag error (MSE)
         err_OOB[col] <- RF$prediction.error
-        # NMRSE
-        #err_OOB[col] <- sqrt(RF$prediction.error/var(as.vector(as.matrix(xmis[, col])),
-        #                                                 na.rm = TRUE))
-
-        # TODO: I don't need matrix here for 1 var - I can just use drop = TRUE
-
-        #sqrt(mean((ximp[mis] - xtrue[mis])^{2}) / var(xtrue[mis]))
 
         # save model
         models[[iter + 1]][[col]] <- RF
 
-        if (nrow(misX) > 0) { # if the column is not complete
+        # if the column is not complete, impute the missing values
+        if (nrow(misX) > 0) {
           misY <- predict(RF, misX)$predictions
         } else {
           misY <- c()
         }
         ximp[misi, col] <- misY
-        # TODO: can I already update the column here? why not?
+
+        # save the OOB error for convergence (NMSE)
+        err_new[col] <- err_OOB[col] / var(ximp[obsi, col])
+        #err_new[col] <- nmse(RF$predictions, ximp[obsi, col]) # this should be the same
+        # save the OOB error (MSE)
+        err_OOB_corrected[col] <- mse(RF$predictions, ximp[obsi, col, drop = TRUE])
 
       } else {
         obsY <- factor(obsY)
@@ -178,13 +162,11 @@ missForest <- function(xmis,
           # record out-of-bag error (Brier score when probability = TRUE)
           err_OOB[col] <- RF$prediction.error
 
-
           # save model
           models[[iter + 1]][[col]] <- RF
 
-          # predict missing parts of Y
-          if (nrow(misX) > 0) { # if the column is not complete
-            #misY <- predict(RF, misX)$predictions
+          # if the column is not complete, impute the missing values
+          if (nrow(misX) > 0) {
 
             # if factor, return factor
             preds <- predict(RF, misX)$predictions
@@ -195,32 +177,19 @@ missForest <- function(xmis,
             misY <- c()
           }
           ximp[misi, col] <- misY
+
+          # save OOB error
+          ximp_binary <- make_binary(ximp[, col, drop = TRUE])
+
+          # save OOB error (NMSE)
+          # BS(RF$predictions, ximp_new_binary[obsi,]) # multiclass.Brier - THIS!
+          # multiclass.Brier(RF$predictions, ximp[obsi,col]) # multiclass.Brier
+          # BSnorm(RF$predictions, ximp_new_binary[obsi,]) # THIS!
+          err_new[col] <- BSnorm(RF$predictions, ximp_binary[obsi,])
+
+          # save OOB error (MSE = Brier score divided by number of categories)
+          err_OOB_corrected[col] <- BS(RF$predictions, ximp_binary[obsi,])/ncol(ximp_binary[obsi,])
         }
-      }
-      #ximp[misi, col] <- misY
-
-      # save convergence
-      if (varType[col] == "numeric"){
-
-        err_new[col] <- err_OOB[col] / var(ximp[obsi, col])
-        #err_new[col] <- nmse(RF$predictions, ximp[obsi, col]) # this should be the same
-        err_OOB_corrected[col] <- mse(RF$predictions, ximp[obsi, col, drop = TRUE])
-
-      } else {
-
-
-        #ximp_old_binary <- make_binary(ximp.old[, col, drop = TRUE]) # ximp.old[, col, , drop = TRUE] // ximp.old[[col]]
-        #ximp_new_binary <- make_binary(ximp[, col, drop = TRUE])
-
-        ximp_binary <- make_binary(ximp[, col, drop = TRUE])
-
-        # BS(RF$predictions, ximp_new_binary[obsi,]) # multiclass.Brier - THIS!
-        # multiclass.Brier(RF$predictions, ximp[obsi,col]) # multiclass.Brier
-        # BSnorm(RF$predictions, ximp_new_binary[obsi,]) # THIS!
-        err_new[col] <- BSnorm(RF$predictions, ximp_binary[obsi,])
-
-        err_OOB_corrected[col] <- BS(RF$predictions, ximp_binary[obsi,])/ncol(ximp_binary[obsi,])
-
       }
 
     }
@@ -229,17 +198,9 @@ missForest <- function(xmis,
 
     iter <- iter + 1
 
-    ## compute estimated imputation error
-    if (any(!is.na(xtrue))){
-      err <- suppressWarnings(mixError(ximp, xmis, xtrue))
-    }
-
     ## return status output, if desired
     if (verbose){
       delta.start <- proc.time() - t.start
-      if (any(!is.na(xtrue))){
-        cat("    error(s):", err, "\n")
-      }
       cat("    OOB error(s) MSE (ranger):    ", err_OOB, "\n")
       cat("    OOB error(s) MSE (corrected): ", err_OOB_corrected, "\n")
       cat("    OOB error(s) NMSE:            ", err_new, "\n")
@@ -252,27 +213,17 @@ missForest <- function(xmis,
 
   ## produce output w.r.t. stopping rule
   if (iter == maxiter){
-    if (any(is.na(xtrue))){
-      out <- list(ximp = ximp, OOBerror = err_OOB, err_OOB_corrected = err_OOB_corrected)
-    } else {
-      out <- list(ximp = ximp, OOBerror = err_OOB, error = err, err_OOB_corrected = err_OOB_corrected)
-    }
+    out <- list(ximp = ximp, OOBerror = err_OOB, err_OOB_corrected = err_OOB_corrected)
   } else {
-    if (any(is.na(xtrue))){
-      out <- list(ximp = ximp.old, OOBerror = OOBerrOld, err_OOB_corrected = err_OOB_corrected_old)
-    } else {
-      out <- list(ximp = ximp.old, OOBerror = OOBerrOld, err_OOB_corrected = err_OOB_corrected_old,
-                  error = suppressWarnings(mixError(ximp.old, xmis, xtrue)))
-    }
+    out <- list(ximp = ximp.old, OOBerror = OOBerrOld, err_OOB_corrected = err_OOB_corrected_old)
   }
+
 
   # save single initialization as list
   out$init <- var_single_init
   out$models <- models
   out$impute_sequence <- impute_sequence
-  out$iter <- iter
   out$maxiter <- maxiter
-  #out$err_OOB_corrected <- err_OOB_corrected
 
   class(out) <- 'missForest'
   return(out)

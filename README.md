@@ -12,11 +12,11 @@ Changes done (for my record):
 
 - save initialization
 
-- save models
-
 - build models for non-missing variables
 
 - save models
+
+- predict
 
 - changed convergence criteria: OOB iso apparent performance
 
