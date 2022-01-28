@@ -212,13 +212,13 @@ missForest <- function(xmis,
     ## return status output, if desired
     if (verbose){
       delta.start <- proc.time() - t.start
-      cat("    OOB error(s) MSE (ranger):    ", err_OOB, "\n")
-      cat("    OOB error(s) MSE (corrected): ", err_OOB_corrected, "\n")
-      cat("    OOB error(s) NMSE:            ", err_new, "\n")
-      cat("    difference(s):                ", err_old - err_new, "\n")
-      cat("    difference(s) total:          ", sum(err_old) - sum(err_new) , "\n")
-
-      cat("    time:", delta.start[3], "seconds\n\n")
+      #cat("    OOB error(s) MSE (ranger):    ", err_OOB, "\n")
+      # this is the OOB error(s) MSE (corrected)
+      cat(sprintf("    OOB errors MSE:   %s\n", paste(err_OOB_corrected, collapse = ", ")))
+      cat(sprintf("    OOB errors NMSE:  %s\n", paste(err_new, collapse = ", ")))
+      cat(sprintf("    differences:      %s\n", paste(err_old - err_new, collapse = ", ")))
+      cat(sprintf("    difference total: %s\n", paste(sum(err_old) - sum(err_new), collapse = ", ")))
+      cat(sprintf("    time:             %s seconds\n\n", delta.start[3]))
     }
   }#end while
 
