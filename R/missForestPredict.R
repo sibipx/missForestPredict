@@ -10,6 +10,8 @@
 missForestPredict <- function(missForestObj, newdata){
 
   # check new data columns (should be the same as in the saved object)
+  if(!length(missForestObj$init) == ncol(newdata))
+    stop("Column names for new data should be the same as in the imputation initializtion")
   if(!all(sort(names(missForestObj$init)) == sort(colnames(newdata))))
     stop("Column names for new data should be the same as in the imputation initializtion")
   if(!all(unlist(lapply(lapply(missForestObj$models, names),
