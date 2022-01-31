@@ -47,7 +47,7 @@ At each iteration the out-of-bag (OOB) error is calculated for each variable sep
 
 The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score).
 
-Continuous variables:
+Continuous variables (including ordinal factors:
 
 $NMSE = \frac{\sum_{i=1}^{N}(x_i - \hat{x_i})^2}{\sum_{i=1}^{N} (x_i - \bar{x})^2} = 1 - R^2$, $i = 1, 2, ... N$
 
@@ -74,8 +74,6 @@ $N$ = number of observations
 $R$ = number of classes
 
 The Brier Score ($BS$) is calculated as the sum of squared distances between the predictions (as probabilities) and the true values (0 or 1) for each class. The reference Brier Score ($BSref$) is calculated as the Brier Score of a predictor that predicts the proportion of the event in each class [@brier1950verification].
-
-TODO: Ordinal variables are treated as categorical? TODO: read paper
 
 
 **Imputation error monitoring**
@@ -261,7 +259,7 @@ head(diamonds_test_miss)
 
 ```
 
-The function *missForest* supports additional arguments to be passed to the *ranger* function. By default, the default values of *ranger* are used. By default, the number of trees in the forest will be 500. This can be overridden by passing *num.trees = 100*, for example. Using less trees will prove to be computationally more efficient.
+The function *missForest* supports additional arguments to be passed to the *ranger* function. By default, the default values of *ranger* are used. By default, the number of trees in the forest is 500. This can be overridden by passing *num.trees = 100*, for example. Using less trees will prove to be computationally more efficient.
 
 ```{r}
 set.seed(2022)
@@ -292,7 +290,7 @@ Alternatively, the *maxiter* parameter can be set to a lower number (the default
 
 ```
 
-TODO: test myself what seems to be preferable (on diamonds dataset, maxiter or num.trees)
+Note that not all arguments to ranger function are supported. Arguments that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic arguments that can be applied to all variables are supported (like: *num.trees, mtry, min.node.size, max.depth, replce,* ...)
 
 ## Perform imputation in descending order 
 

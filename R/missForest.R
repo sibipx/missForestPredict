@@ -7,7 +7,7 @@
 #' @param decreasing (boolean) if TRUE the columns are sorted with decreasing amount of missing values
 #' @param verbose (boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations
 #' @param class.weights list of priors of the classes in the categorical variables
-#' @param ... other arguments passed to ranger function
+#' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)
 #'
 #' @return
 #' @export
@@ -16,15 +16,20 @@ missForest <- function(xmis,
                        maxiter = 10,
                        decreasing = FALSE,
                        verbose = FALSE,
-                       class.weights = NULL,
                        ...){
+
+  unsupported_args <- c("case.weights", "class.weights", "splitrule", "num.random.splits",
+                        "alpha", "minprop", "split.select.weights", "always.split.variables",
+                       "inbag", "holdout", "quantreg", "oob.error", "dependent.variable.name",
+                       "status.variable.name", "classification")
+
+  unsupported_args <- unsupported_args[unsupported_args %in% names(list(...))]
+  if (length(unsupported_args) > 0){
+    stop(sprintf("The following argument(s) to ranger function are not supported: %s", paste(unsupported_args, collapse = ", ")))
+  }
 
   p <- ncol(xmis)
   col_names <- colnames(xmis)
-
-  # TODO: review class.weights
-  if (!is.null(class.weights))
-    stopifnot(length(class.weights) == p, typeof(class.weights) == 'list')
 
   ## remove completely missing variables
   if (any(apply(is.na(xmis), 2, sum) == nrow(xmis)))
@@ -151,10 +156,7 @@ missForest <- function(xmis,
           misY <- factor(rep(names(summarY), sum(misi)))
         } else {
 
-          RF <- ranger(x = obsX, y = obsY,
-                       #class.weights = if (!is.null(class.weights)) class.weights[[varInd]], # TODO: test this and cutoff and strata
-                       probability = TRUE,
-                       ...)
+          RF <- ranger(x = obsX, y = obsY, probability = TRUE, ...)
 
           # record out-of-bag error (Brier score when probability = TRUE)
           err_OOB[col] <- RF$prediction.error
