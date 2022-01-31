@@ -92,8 +92,6 @@ test_that("prediction on training set is the same as imputation", {
   set.seed(2022)
   iris_mis <- prodNA(iris, noNA = 0.1)
 
-  iris_mis %>% head()
-
   set.seed(2022)
   missForest_object <- missForestPredict::missForest(iris_mis, verbose = FALSE)
   iris_imp_df <- missForest_object$ximp
@@ -101,5 +99,17 @@ test_that("prediction on training set is the same as imputation", {
   missForest_predictions <- missForestPredict::missForestPredict(missForest_object, newdata = iris_mis)
 
   expect_equal(iris_imp_df, missForest_predictions)
+
+})
+
+test_that("imputing complete dataframe returns the same dataframe", {
+
+  data(iris)
+
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris, verbose = FALSE)
+  iris_imp_df <- missForest_object$ximp
+
+  expect_equal(iris_imp_df, iris)
 
 })
