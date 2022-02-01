@@ -9,6 +9,11 @@
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)
 #'
 #' @return TODO
+#' @examples
+#' data(iris)
+#' iris_mis <- prodNA(iris, noNA = 0.1)
+#' imputation_object <- missForest(iris_mis)
+#' iris_imp <- imputation_object$ximp
 #' @export
 
 missForest <- function(xmis,

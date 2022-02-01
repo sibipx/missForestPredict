@@ -23,3 +23,9 @@ TODO
 \description{
 Imputes a matrix / dataframe and returns imputation models to be used on new observations
 }
+\examples{
+data(iris)
+iris_mis <- prodNA(iris, noNA = 0.1)
+imputation_object <- missForest(iris_mis)
+iris_imp <- imputation_object$ximp
+}

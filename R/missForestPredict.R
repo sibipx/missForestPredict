@@ -4,6 +4,23 @@
 #' @param newdata new data to impute. The column names should be the same as in the imputation model
 #'
 #' @return an imputed dataframe
+#' @examples
+#' data(iris)
+#' # split train / test and create missing values
+#' id_test <- sample(1:nrow(iris), floor(nrow(iris)/3))
+#'
+#' iris_train <- iris[-id_test,]
+#' iris_test <- iris[id_test,]
+#'
+#' iris_train_miss <- prodNA(iris_train, noNA = 0.1)
+#' iris_test_miss <- prodNA(iris_test, noNA = 0.1)
+#'
+#' # impute train and learn imputation models
+#' iris_train_imp_obj <- missForest(iris_train_miss)
+#'
+#' # impute test
+#' iris_test_imp_new <- missForestPredict(iris_train_imp_obj, newdata = iris_test_miss)
+#' head(iris_test_imp_new)
 #' @export
 
 
