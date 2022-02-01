@@ -21,7 +21,7 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue){
 
   # check variable types
   column_class <- function(x) ifelse(is.numeric(x), "numeric",
-                                     ifelse(is.factor(x), "factor", NA_character_))
+                                     ifelse(is.factor(x) | is.character(x), "factor", NA_character_))
 
   varType <- unlist(lapply(xmis, column_class))
 
@@ -51,9 +51,9 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue){
 
       if (length(ximp[misi,col]) > 0) {
         # calculate MSE
-        err_MSE[col] <- mse(ximp[misi,col], xtrue[misi,col])
+        err_MSE[col] <- mse(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
         # calculate NMSE
-        err_NMSE[col] <- nmse(ximp[misi,col], xtrue[misi,col])
+        err_NMSE[col] <- nmse(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
       } else {
         err_MSE[col] <- 0
         err_NMSE[col] <- 0
@@ -65,7 +65,7 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue){
       # calculate normalized BRIER
 
       # calculate missclassification error
-      err_MER[col] <- mer(ximp[misi,col], xtrue[misi,col])
+      err_MER[col] <- mer(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
 
     }
 
