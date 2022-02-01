@@ -51,7 +51,7 @@ missForest_old(
 \item{xtrue}{foo}
 }
 \value{
-
+foo
 }
 \description{
 Title

@@ -6,10 +6,9 @@
 #' @param maxiter maximum number of iterations
 #' @param decreasing (boolean) if TRUE the columns are sorted with decreasing amount of missing values
 #' @param verbose (boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations
-#' @param class.weights list of priors of the classes in the categorical variables
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)
 #'
-#' @return
+#' @return TODO
 #' @export
 
 missForest <- function(xmis,
@@ -39,7 +38,7 @@ missForest <- function(xmis,
 
   # check variable types
   column_class <- function(x) ifelse(is.numeric(x), "numeric",
-                                     ifelse(is.factor(x), "factor", NA_character_))
+                                     ifelse(is.factor(x) | is.character(x), "factor", NA_character_))
 
   varType <- unlist(lapply(xmis, column_class))
 
@@ -67,7 +66,7 @@ missForest <- function(xmis,
     } else { # factor
       # take maximum number of samples in one class (ignore NA)
       max_level <- max(table(ximp[, col, drop = TRUE], useNA = "no"))
-      summary_col <- summary(ximp[!is.na(ximp[, col, drop = TRUE]), col, drop = TRUE])
+      summary_col <- summary(as.factor(ximp[!is.na(ximp[, col, drop = TRUE]), col, drop = TRUE]))
       # if there are several classes with equal number of samples, sample one at random
       mode_col <- sample(names(which(max_level == summary_col)), 1)
       # keep mode

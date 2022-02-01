@@ -113,3 +113,24 @@ test_that("imputing complete dataframe returns the same dataframe", {
   expect_equal(iris_imp_df, iris)
 
 })
+
+test_that("imputation is the same for factor and character", {
+
+  data(iris)
+
+  iris <- prodNA(iris, noNA = 0.2)
+
+  missForest_object <- missForestPredict::missForest(iris, verbose = FALSE, seed = 2022)
+  iris_imp_df <- missForest_object$ximp
+
+  iris_char <- iris
+  iris_char$Species <- as.character(iris_char$Species)
+
+  missForest_object_char <- missForestPredict::missForest(iris_char, verbose = FALSE, seed = 2022)
+  iris_imp_df_char <- missForest_object_char$ximp
+
+  iris_imp_df_char$Species <- as.factor(iris_imp_df_char$Species)
+
+  expect_equal(iris_imp_df, iris_imp_df_char)
+
+})

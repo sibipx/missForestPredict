@@ -94,7 +94,7 @@ The R package missforestpredict is for the moment only available on the KU Leuve
 
 ```{r, eval=FALSE}
 library(devtools)
-devtools::install_git('https://gitlab.kuleuven.be/u0143313/missforestpredict/')
+devtools::install_git('https://gitlab.kuleuven.be/u0143313/missforestpredict/', dependencies = TRUE)
 
 ```
 

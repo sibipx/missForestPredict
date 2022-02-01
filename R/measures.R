@@ -47,7 +47,7 @@ nmse <- function (preds, y) {
 
 #' Missclassification error rate - ER
 #'
-#' @param probabilities matrix of class predictions for each class (classes in columns, observations in rows)
+#' @param prediction matrix of class predictions for each class (classes in columns, observations in rows)
 #' @param y matrix of true values for y; each column contains a class ordered in the same order as probabilities
 #'
 #' @return Missclassification error rate

@@ -7,9 +7,9 @@
 mer(prediction, y)
 }
 \arguments{
-\item{y}{matrix of true values for y; each column contains a class ordered in the same order as probabilities}
+\item{prediction}{matrix of class predictions for each class (classes in columns, observations in rows)}
 
-\item{probabilities}{matrix of class predictions for each class (classes in columns, observations in rows)}
+\item{y}{matrix of true values for y; each column contains a class ordered in the same order as probabilities}
 }
 \value{
 Missclassification error rate

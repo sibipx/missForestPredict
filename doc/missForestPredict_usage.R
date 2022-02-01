@@ -6,7 +6,7 @@ knitr::opts_chunk$set(
 
 ## ---- eval=FALSE--------------------------------------------------------------
 #  library(devtools)
-#  devtools::install_git('https://gitlab.kuleuven.be/u0143313/missforestpredict/')
+#  devtools::install_git('https://gitlab.kuleuven.be/u0143313/missforestpredict/', dependencies = TRUE)
 #  
 
 ## -----------------------------------------------------------------------------

@@ -15,7 +15,7 @@
 #' @param maxnodes foo
 #' @param xtrue foo
 #'
-#' @return
+#' @return foo
 #' @export
 
 missForest_old <- function(xmis, maxiter = 10, ntree = 500, variablewise = FALSE,

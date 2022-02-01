@@ -4,36 +4,21 @@
 \alias{missForest}
 \title{Imputes a matrix / dataframe and returns imputation models to be used on new observations}
 \usage{
-missForest(
-  xmis,
-  maxiter = 10,
-  variablewise = FALSE,
-  decreasing = FALSE,
-  verbose = FALSE,
-  class.weights = NULL,
-  xtrue = NA,
-  ...
-)
+missForest(xmis, maxiter = 10, decreasing = FALSE, verbose = FALSE, ...)
 }
 \arguments{
 \item{xmis}{matrix / dataframe containing missing values}
 
 \item{maxiter}{maximum number of iterations}
 
-\item{variablewise}{TODO: get rid of this}
-
 \item{decreasing}{(boolean) if TRUE the columns are sorted with decreasing amount of missing values}
 
 \item{verbose}{(boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations}
 
-\item{class.weights}{list of priors of the classes in the categorical variables}
-
-\item{xtrue}{complete data matrix}
-
-\item{...}{other arguments passed to ranger function}
+\item{...}{other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)}
 }
 \value{
-
+TODO
 }
 \description{
 Imputes a matrix / dataframe and returns imputation models to be used on new observations

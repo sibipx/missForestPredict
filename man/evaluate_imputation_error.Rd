@@ -12,8 +12,6 @@ evaluate_imputation_error(ximp, xmis, xtrue)
 \item{xmis}{original matrix / dataframe with missing values}
 
 \item{xtrue}{true matrix / dataframe (or any matrix to be compared with ximp)}
-
-\item{variableWise}{logical; should the errors be returned for each variable (TRUE) or aggregated by variable type (numeric / factor)}
 }
 \value{
 named vector of errors
