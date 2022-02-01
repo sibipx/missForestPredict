@@ -19,6 +19,7 @@
 missForest <- function(xmis,
                        maxiter = 10,
                        decreasing = FALSE,
+                       force = FALSE,
                        verbose = FALSE,
                        ...){
 
@@ -106,7 +107,7 @@ missForest <- function(xmis,
   models <- list()
 
   ## iterate missForest
-  while (sum(err_new) < sum(err_old) & iter < maxiter){
+  while ((sum(err_new) < sum(err_old) | force) & iter < maxiter){
 
     models[[iter + 1]] <- list()
 
