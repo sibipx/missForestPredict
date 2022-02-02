@@ -5,6 +5,8 @@
 #' @param xmis matrix / dataframe containing missing values
 #' @param maxiter maximum number of iterations
 #' @param decreasing (boolean) if TRUE the columns are sorted with decreasing amount of missing values
+#' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom
+#' @param x_init if initialization = custom; a compplete dataframe to be used as initialization
 #' @param verbose (boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)
 #'
@@ -20,18 +22,34 @@ missForest <- function(xmis,
                        maxiter = 10,
                        decreasing = FALSE,
                        force = FALSE,
+                       initialization = "median/mode",
+                       x_init = NULL,
                        verbose = FALSE,
                        ...){
 
   unsupported_args <- c("case.weights", "class.weights", "splitrule", "num.random.splits",
                         "alpha", "minprop", "split.select.weights", "always.split.variables",
-                       "inbag", "holdout", "quantreg", "oob.error", "dependent.variable.name",
-                       "status.variable.name", "classification")
+                        "inbag", "holdout", "quantreg", "oob.error", "dependent.variable.name",
+                        "status.variable.name", "classification")
 
   unsupported_args <- unsupported_args[unsupported_args %in% names(list(...))]
   if (length(unsupported_args) > 0){
     stop(sprintf("The following argument(s) to ranger function are not supported: %s", paste(unsupported_args, collapse = ", ")))
   }
+
+  if (!initialization %in% c("mean/mode", "median/mode", "custom"))
+    stop("initialization has to be mean/mode, median/mode or custom")
+
+  if (initialization == "custom"){
+    if (is.null(x_init))
+      stop("An initialized dataframe has to be provided in x_init if the initialization mode is custom")
+    if (any(any(dim(xmis) != dim(x_init))))
+      stop(sprintf("x_init needs to have the same dimensions as xmis: %s", paste(dim(xmis), collapse = ", ")))
+    if (sum(!complete.cases(x_init)) > 0){
+      stop("x_init needs to be a complete dataframe with no missing values")
+    }
+  }
+
 
   p <- ncol(xmis)
   col_names <- colnames(xmis)
@@ -51,36 +69,47 @@ missForest <- function(xmis,
   if (any(is.na(varType))) stop("Only numeric or factor columns are supported. Logical or other types are not supported.")
 
   # perform initialization (mean/mode imputation)
-  ximp <- xmis
+  if (initialization == "custom") {
+    ximp <- x_init
+    var_single_init <- NULL
+  } else {
+    ximp <- xmis
 
-  # make all integer columns double (imputed values might not be integer)
-  ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+    # make all integer columns double (imputed values might not be integer)
+    ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
 
-  # TODO: give warning? test on diamonds
+    # TODO: give warning? test on diamonds
 
-  var_single_init <- vector("list", p)
-  names(var_single_init) <- col_names
+    var_single_init <- vector("list", p)
+    names(var_single_init) <- col_names
 
-  for (col in col_names) {
-    if (varType[[col]] == "numeric") {
-      # keep mean
-      mean_col <- mean(xmis[, col, drop = TRUE], na.rm = TRUE)
-      var_single_init[[col]] <- mean_col
+    for (col in col_names) {
+      if (varType[[col]] == "numeric") {
+        # keep mean or median
+        if (initialization == "mean/mode"){
+          mean_col <- mean(xmis[, col, drop = TRUE], na.rm = TRUE)
+        } else if (initialization == "median/mode"){
+          mean_col <- median(xmis[, col, drop = TRUE], na.rm = TRUE)
+        }
 
-      # initialize ximp column
-      ximp[is.na(xmis[, col, drop = TRUE]), col] <- mean_col
-    } else { # factor
-      # take maximum number of samples in one class (ignore NA)
-      max_level <- max(table(ximp[, col, drop = TRUE], useNA = "no"))
-      summary_col <- summary(as.factor(ximp[!is.na(ximp[, col, drop = TRUE]), col, drop = TRUE]))
-      # if there are several classes with equal number of samples, sample one at random
-      mode_col <- sample(names(which(max_level == summary_col)), 1)
-      # keep mode
-      var_single_init[[col]] <- mode_col
+        var_single_init[[col]] <- mean_col
 
-      # initialize ximp column
-      ximp[is.na(xmis[, col, drop = TRUE]),col] <- mode_col
+        # initialize ximp column
+        ximp[is.na(xmis[, col, drop = TRUE]), col] <- mean_col
 
+      } else { # factor
+        # take maximum number of samples in one class (ignore NA)
+        max_level <- max(table(ximp[, col, drop = TRUE], useNA = "no"))
+        summary_col <- summary(as.factor(ximp[!is.na(ximp[, col, drop = TRUE]), col, drop = TRUE]))
+        # if there are several classes with equal number of samples, sample one at random
+        mode_col <- sample(names(which(max_level == summary_col)), 1)
+        # keep mode
+        var_single_init[[col]] <- mode_col
+
+        # initialize ximp column
+        ximp[is.na(xmis[, col, drop = TRUE]),col] <- mode_col
+
+      }
     }
   }
 
@@ -238,6 +267,7 @@ missForest <- function(xmis,
 
   # save single initialization as list
   out$init <- var_single_init
+  out$initialization <- initialization
   out$models <- models
   out$impute_sequence <- impute_sequence
   out$maxiter <- maxiter
