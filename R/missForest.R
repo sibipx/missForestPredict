@@ -58,8 +58,6 @@ missForest <- function(xmis,
   if (any(apply(is.na(xmis), 2, sum) == nrow(xmis)))
     stop("There are variables completely missing in the input data. Remove these before imputation")
 
-  # TODO: should I support character or not? For now only factor
-
   # check variable types
   column_class <- function(x) ifelse(is.numeric(x), "numeric",
                                      ifelse(is.factor(x) | is.character(x), "factor", NA_character_))

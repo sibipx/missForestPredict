@@ -2,6 +2,7 @@
 #'
 #' @param missForestObj missForest object as returned by the missForest function
 #' @param newdata new data to impute. The column names should be the same as in the imputation model
+#' @param x_init initialization dataframe in case custom initialization mode has been used
 #'
 #' @return an imputed dataframe
 #' @examples
@@ -24,27 +25,39 @@
 #' @export
 
 
-missForestPredict <- function(missForestObj, newdata){
+missForestPredict <- function(missForestObj, newdata, x_init = NULL){
 
-  # check new data columns (should be the same as in the saved object)
-  if(!length(missForestObj$init) == ncol(newdata))
-    stop("Column names for new data should be the same as in the imputation initializtion")
-  if(!all(sort(names(missForestObj$init)) == sort(colnames(newdata))))
-    stop("Column names for new data should be the same as in the imputation initializtion")
-  if(!all(unlist(lapply(lapply(missForestObj$models, names),
-                        function(x) sort(x) == sort(colnames(newdata))))))
-    stop("Column names for new data should be the same as in the imputation initializtion")
+  # checks for custom
+  if (missForestObj$initialization == "custom"){
+    if(is.null(x_init))
+      stop("missForest was run with custom initialization. x_init should not be NULL.")
+    if(any(any(dim(newdata) != dim(x_init))))
+      stop(sprintf("x_init needs to have the same dimensions as newdata: %s", paste(dim(newdata), collapse = ", ")))
+    if(sum(!complete.cases(x_init)) > 0)
+      stop("x_init needs to be a complete dataframe with no missing values")
+  } else { # check for non-custom
+    if(!length(missForestObj$init) == ncol(newdata))
+      stop("Column names for new data should be the same as in the imputation initialization")
+    if(!all(sort(names(missForestObj$init)) == sort(colnames(newdata))))
+      stop("Column names for new data should be the same as in the imputation initialization")
+    if(!all(unlist(lapply(lapply(missForestObj$models, names),
+                          function(x) sort(x) == sort(colnames(newdata))))))
+      stop("Column names for new data should be the same as in the imputation initialization")
+  }
 
   # initialize
-  ximp <- newdata
+  if (missForestObj$initialization != "custom") {
+    ximp <- newdata
+    # make all integer columns double (imputed values might not be integer)
+    ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
 
-  # make all integer columns double (imputed values might not be integer)
-  ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
-
-  # TODO: give warning? test on diamonds
-
-  for (c in names(missForestObj$init)){
-    ximp[is.na(ximp[,c, drop = TRUE]),c] <- missForestObj$init[[c]]
+    for (c in names(missForestObj$init)){
+      ximp[is.na(ximp[,c, drop = TRUE]),c] <- missForestObj$init[[c]]
+    }
+  } else {
+    ximp <- x_init
+    # make all integer columns double (imputed values might not be integer)
+    ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
   }
 
   # check that initialization is complete
