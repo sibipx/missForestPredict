@@ -1,7 +1,9 @@
 #' Imputes a new dataframe based on the missForest models
 #'
+#' Imputes a new dataframe based on the missForest models. The same number of iterations as in missForest are used.
+#'
 #' @param missForestObj missForest object as returned by the missForest function
-#' @param newdata new data to impute. The column names should be the same as in the imputation model
+#' @param newdata new data to impute. The column names should be the same as in the imputation model.
 #' @param x_init initialization dataframe in case custom initialization mode has been used
 #'
 #' @return an imputed dataframe

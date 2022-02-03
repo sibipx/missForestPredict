@@ -9,7 +9,7 @@ missForestPredict(missForestObj, newdata, x_init = NULL)
 \arguments{
 \item{missForestObj}{missForest object as returned by the missForest function}
 
-\item{newdata}{new data to impute. The column names should be the same as in the imputation model}
+\item{newdata}{new data to impute. The column names should be the same as in the imputation model.}
 
 \item{x_init}{initialization dataframe in case custom initialization mode has been used}
 }
@@ -17,7 +17,7 @@ missForestPredict(missForestObj, newdata, x_init = NULL)
 an imputed dataframe
 }
 \description{
-Imputes a new dataframe based on the missForest models
+Imputes a new dataframe based on the missForest models. The same number of iterations as in missForest are used.
 }
 \examples{
 data(iris)

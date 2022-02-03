@@ -11,11 +11,11 @@ evaluate_imputation_error(ximp, xmis, xtrue)
 
 \item{xmis}{original dataframe with missing values}
 
-\item{xtrue}{true dataframe (or any matrix to be compared with ximp)}
+\item{xtrue}{true dataframe with no missing values}
 }
 \value{
-named vector of errors
+dataframe with variables in rows and performance measures in columns
 }
 \description{
-Evaluate the imputation error when true values are known. TODO
+Evaluate the imputation error when true values are known. Useful when missing values are simulated.
 }

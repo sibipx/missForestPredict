@@ -1,8 +1,9 @@
-
-
-#' Imputes a matrix / dataframe and returns imputation models to be used on new observations
+#' Imputes a dataframe and returns imputation models to be used on new observations
 #'
-#' @param xmis matrix / dataframe containing missing values
+#' Imputes a dataframe and returns imputation models to be used on new observations.
+#' Models are built for each variable in the dataframe (even if there are no missing values).
+#'
+#' @param xmis dataframe containing missing values
 #' @param maxiter maximum number of iterations
 #' @param OOB_weights vector of weights for each variable in the convergence criteria. By default all variables weight equally.
 #' Considering that imputation models are built for all variables, even if no missing values are encountered, it can considered to adjust the
@@ -10,11 +11,18 @@
 #' according to the (expected) proportion of missingness on each variable.
 #' @param decreasing (boolean) if TRUE the columns are sorted with decreasing amount of missing values
 #' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom
-#' @param x_init if initialization = custom; a compplete dataframe to be used as initialization
-#' @param verbose (boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations
+#' @param x_init if initialization = custom; a complete dataframe to be used as initialization
+#' @param verbose (boolean) if TRUE then missForest returns error estimates and runtime
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)
 #'
-#' @return TODO
+#' @return Object of class \code{missForest} with elements
+#'     \item{\code{ximp}}{dataframe with imputed values}
+#'     \item{\code{OOBerror}}{TODO! this and corrected!}
+#'     \item{\code{init}}{NULL if custome initalization is used; otherwise list of mean/mode or median/mode for each variable;}
+#'     \item{\code{models}}{list of random forest models for each iteration}
+#'     \item{\code{impute_sequence}}{vector variable names in the order in which imputation has been run}
+#'     \item{\code{maxiter}}{maxiter parameter as passed to the function}
+#'
 #' @examples
 #' data(iris)
 #' iris_mis <- produce_NA(iris, proportion = 0.1)
@@ -29,7 +37,7 @@ missForest <- function(xmis,
                        force = FALSE,
                        initialization = "median/mode",
                        x_init = NULL,
-                       verbose = FALSE,
+                       verbose = TRUE,
                        ...){
 
   unsupported_args <- c("case.weights", "class.weights", "splitrule", "num.random.splits",

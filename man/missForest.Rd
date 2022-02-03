@@ -2,7 +2,7 @@
 % Please edit documentation in R/missForest.R
 \name{missForest}
 \alias{missForest}
-\title{Imputes a matrix / dataframe and returns imputation models to be used on new observations}
+\title{Imputes a dataframe and returns imputation models to be used on new observations}
 \usage{
 missForest(
   xmis,
@@ -12,12 +12,12 @@ missForest(
   force = FALSE,
   initialization = "median/mode",
   x_init = NULL,
-  verbose = FALSE,
+  verbose = TRUE,
   ...
 )
 }
 \arguments{
-\item{xmis}{matrix / dataframe containing missing values}
+\item{xmis}{dataframe containing missing values}
 
 \item{maxiter}{maximum number of iterations}
 
@@ -30,17 +30,24 @@ according to the (expected) proportion of missingness on each variable.}
 
 \item{initialization}{initialization method before running RF models; supported: mean/mode, median/mode and custom}
 
-\item{x_init}{if initialization = custom; a compplete dataframe to be used as initialization}
+\item{x_init}{if initialization = custom; a complete dataframe to be used as initialization}
 
-\item{verbose}{(boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations}
+\item{verbose}{(boolean) if TRUE then missForest returns error estimates and runtime}
 
 \item{...}{other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)}
 }
 \value{
-TODO
+Object of class \code{missForest} with elements
+    \item{\code{ximp}}{dataframe with imputed values}
+    \item{\code{OOBerror}}{TODO! this and corrected!}
+    \item{\code{init}}{NULL if custome initalization is used; otherwise list of mean/mode or median/mode for each variable;}
+    \item{\code{models}}{list of random forest models for each iteration}
+    \item{\code{impute_sequence}}{vector variable names in the order in which imputation has been run}
+    \item{\code{maxiter}}{maxiter parameter as passed to the function}
 }
 \description{
-Imputes a matrix / dataframe and returns imputation models to be used on new observations
+Imputes a dataframe and returns imputation models to be used on new observations.
+Models are built for each variable in the dataframe (even if there are no missing values).
 }
 \examples{
 data(iris)
