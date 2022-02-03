@@ -35,7 +35,7 @@ The imputation algorithm is based on random forests [@breiman01] as implemented 
 
 **Saved models and initialization**
 
-The missing data in each column is initialized with a mean/mode imputation or a custom imputation scheme (TODO). Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. 
+The missing data in each column is initialized the mean/mode (or median/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. 
 
 **Imputation of new observations**
 
@@ -74,7 +74,6 @@ $N$ = number of observations
 $R$ = number of classes
 
 The Brier Score ($BS$) is calculated as the sum of squared distances between the predictions (as probabilities) and the true values (0 or 1) for each class. The reference Brier Score ($BSref$) is calculated as the Brier Score of a predictor that predicts the proportion of the event in each class [@brier1950verification].
-
 
 **Imputation error monitoring**
 
@@ -295,6 +294,16 @@ Note that not all arguments to ranger function are supported. Arguments that sho
 ## Perform imputation in descending order 
 
 TODO: test if it's worth it
+
+## Custom initialization
+
+The parameter *initialization* suppots three values: *mean/mode*, *median/mode* and *custom*. The default is median/mode, which will initialize each variable with the median (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable. 
+
+When *custom* is used, a complete dataframe is expected in *x_init*. For example, the imputations of another imputation method can be used as initialization. When *custom* is used in *missForest* function, an initialization dataframe has to be passed to the *missForestPredict* function later on too. 
+
+We will exemplify this with an initialization via linear models on the *diamonds* dataset.
+
+
 
 
 

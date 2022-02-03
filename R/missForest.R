@@ -70,13 +70,15 @@ missForest <- function(xmis,
   if (initialization == "custom") {
     ximp <- x_init
     var_single_init <- NULL
+
+    # make all integer columns double (imputed values might not be integer)
+    ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+
   } else {
     ximp <- xmis
 
     # make all integer columns double (imputed values might not be integer)
     ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
-
-    # TODO: give warning? test on diamonds
 
     var_single_init <- vector("list", p)
     names(var_single_init) <- col_names
