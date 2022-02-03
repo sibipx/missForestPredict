@@ -3,7 +3,5 @@
 export(evaluate_imputation_error)
 export(missForest)
 export(missForestPredict)
-export(missForestPredict_old)
-export(missForest_old)
 export(mixError)
 export(produce_NA)

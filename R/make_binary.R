@@ -3,6 +3,8 @@
 #' @param x a vector of type factor
 #'
 #' @return a matrix of binary variables
+#' @noRd
+
 
 make_binary <- function(x) {
 

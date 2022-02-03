@@ -2,20 +2,20 @@
 % Please edit documentation in R/evaluate_imputation_error.R
 \name{evaluate_imputation_error}
 \alias{evaluate_imputation_error}
-\title{Title}
+\title{Evaluate the imputation error when true values are known.}
 \usage{
 evaluate_imputation_error(ximp, xmis, xtrue)
 }
 \arguments{
-\item{ximp}{imputed matrix / dataframe}
+\item{ximp}{imputed dataframe}
 
-\item{xmis}{original matrix / dataframe with missing values}
+\item{xmis}{original dataframe with missing values}
 
-\item{xtrue}{true matrix / dataframe (or any matrix to be compared with ximp)}
+\item{xtrue}{true dataframe (or any matrix to be compared with ximp)}
 }
 \value{
 named vector of errors
 }
 \description{
-Title
+Evaluate the imputation error when true values are known. TODO
 }

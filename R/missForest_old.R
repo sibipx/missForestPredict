@@ -16,7 +16,7 @@
 #' @param xtrue foo
 #'
 #' @return foo
-#' @export
+#' @noRd
 
 missForest_old <- function(xmis, maxiter = 10, ntree = 500, variablewise = FALSE,
                        decreasing = FALSE, verbose = FALSE,

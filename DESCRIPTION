@@ -8,12 +8,13 @@ Maintainer: Elena Albu <elena.albu@kuleuven.be>
 Depends: ranger
 Imports: ranger
 Suggests: knitr, rmarkdown, ggplot2
-Description: The package missForestPredict implements the missing data imputation algorithm used in the R package
-             missForest with adaptations for prediction settings. The function missForest
-             is used to impute a (training) dataset with missing values and to learn imputations models that can be
-             later used for imputing new observations. The function missForestPredict is used to impute one or multiple
-             new observations (test set) using the models learned on the training data. 
+Description: The package missForestPredict implements the missing data imputation 
+    algorithm used in the R package missForest with adaptations for prediction settings. 
+    The function missForest is used to impute a (training) dataset with missing values and 
+    to learn imputations models that can be later used for imputing new observations. 
+    The function missForestPredict is used to impute one or multiple new observations (test set) 
+    using the models learned on the training data. 
 License: GPL (>= 2)
-URL: https://gitlab.kuleuven.be/u0143313/missforestpredict/-/tree/master
+URL: https://gitlab.kuleuven.be/u0143313/missforestpredict/
 RoxygenNote: 7.1.2
 VignetteBuilder: knitr

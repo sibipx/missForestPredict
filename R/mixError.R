@@ -8,6 +8,7 @@
 #'
 #' @return named vector of errors
 #' @export
+#' @noRd
 
 mixError <- function(ximp, xmis, xtrue, variableWise = FALSE)
 {

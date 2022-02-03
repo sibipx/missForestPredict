@@ -4,7 +4,7 @@
 #' @param newdata new data to impute. The column names should be the same as in the imputation model
 #'
 #' @return an imputed dataframe
-#' @export
+#' @noRd
 
 missForestPredict_old <- function(missForestObj, newdata){
 

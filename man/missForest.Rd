@@ -21,6 +21,11 @@ missForest(
 
 \item{maxiter}{maximum number of iterations}
 
+\item{OOB_weights}{vector of weights for each variable in the convergence criteria. By default all variables weight equally.
+Considering that imputation models are built for all variables, even if no missing values are encountered, it can considered to adjust the
+weights to 0 for those variables that are expected to never be missing. Alternatively the weights can be adjusted
+according to the (expected) proportion of missingness on each variable.}
+
 \item{decreasing}{(boolean) if TRUE the columns are sorted with decreasing amount of missing values}
 
 \item{initialization}{initialization method before running RF models; supported: mean/mode, median/mode and custom}

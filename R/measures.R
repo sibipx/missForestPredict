@@ -4,6 +4,8 @@
 #' @param y matrix of true values for y; each column contains a class ordered in the same order as probabilities
 #'
 #' @return Brier Score
+#' @keywords internal
+#' @noRd
 
 BS <- function (probabilities, y) {
   mean(rowSums((probabilities - y)^2))
@@ -15,6 +17,8 @@ BS <- function (probabilities, y) {
 #' @param y matrix of true values for y; each column contains a class ordered in the same order as probabilities
 #'
 #' @return Normalized Brier Score
+#' @keywords internal
+#' @noRd
 
 BSnorm <- function (probabilities, y) {
   #BS_reference <- BS(colMeans(y), y) # refrence is a "no skill learner" that predicts the class prevalence
@@ -28,6 +32,8 @@ BSnorm <- function (probabilities, y) {
 #' @param y vector of true values for y
 #'
 #' @return Mean Square Error - MSE
+#' @keywords internal
+#' @noRd
 
 mse <- function (preds, y) {
   mean((y-preds)^2)
@@ -39,6 +45,8 @@ mse <- function (preds, y) {
 #' @param y vector of true values for y
 #'
 #' @return Normalized Mean Square Error - NMSE
+#' @keywords internal
+#' @noRd
 
 nmse <- function (preds, y) {
   m <- mean(y)
@@ -51,6 +59,8 @@ nmse <- function (preds, y) {
 #' @param y matrix of true values for y; each column contains a class ordered in the same order as probabilities
 #'
 #' @return Missclassification error rate
+#' @keywords internal
+#' @noRd
 
 mer <- function (prediction, y) {
   mean(prediction != y)
