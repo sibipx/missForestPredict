@@ -133,8 +133,8 @@ We produce 10% random missing values on each column in both the training and the
 
 ```{r}
 set.seed(2022)
-iris_train_miss <- prodNA(iris_train, noNA = 0.1)
-iris_test_miss <- prodNA(iris_test, noNA = 0.1)
+iris_train_miss <- produce_NA(iris_train, c = 0.1)
+iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
 
 head(iris_train_miss)
 head(iris_test_miss)
@@ -250,8 +250,8 @@ id_test <- sample(1:N, n_test)
 diamonds_train <- diamonds[-id_test,]
 diamonds_test <- diamonds[id_test,]
 
-diamonds_train_miss <- prodNA(diamonds_train, noNA = 0.1)
-diamonds_test_miss <- prodNA(diamonds_test, noNA = 0.1)
+diamonds_train_miss <- produce_NA(diamonds_train, proportion = 0.1)
+diamonds_test_miss <- produce_NA(diamonds_test, proportion = 0.1)
 
 head(diamonds_train_miss)
 head(diamonds_test_miss)

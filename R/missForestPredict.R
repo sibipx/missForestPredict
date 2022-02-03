@@ -13,8 +13,8 @@
 #' iris_train <- iris[-id_test,]
 #' iris_test <- iris[id_test,]
 #'
-#' iris_train_miss <- prodNA(iris_train, noNA = 0.1)
-#' iris_test_miss <- prodNA(iris_test, noNA = 0.1)
+#' iris_train_miss <- produce_NA(iris_train, proportion = 0.1)
+#' iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
 #'
 #' # impute train and learn imputation models
 #' iris_train_imp_obj <- missForest(iris_train_miss)

@@ -9,8 +9,8 @@ test_that("tibble retruns tibble", {
 
   data(iris)
   set.seed(2022)
-  iris_train <- prodNA(iris[1:100,], noNA = 0.1)
-  iris_test <- prodNA(iris[101:150,], noNA = 0.1)
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
   iris_train_tbl <- as_tibble(iris_train)
   iris_test_tbl <- as_tibble(iris_test, rownames = NA)
 
@@ -28,7 +28,7 @@ test_that("tibble and dataframe results are the same for missForest", {
   require(tidyverse)
 
   data(iris)
-  iris_mis <- prodNA(iris, noNA = 0.1)
+  iris_mis <- produce_NA(iris, proportion = 0.1)
   iris_mis_tbl <- as_tibble(iris_mis)
 
   set.seed(2022)
@@ -49,8 +49,8 @@ test_that("tibble and dataframe results are the same for missForestPredict", {
 
   data(iris)
   set.seed(2022)
-  iris_train <- prodNA(iris[1:100,], noNA = 0.1)
-  iris_test <- prodNA(iris[101:150,], noNA = 0.1)
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
   iris_train_tbl <- as_tibble(iris_train)
   iris_test_tbl <- as_tibble(iris_test, rownames = NA)
 
@@ -72,8 +72,8 @@ test_that("tibble retruns tibble", {
 
   data(iris)
   set.seed(2022)
-  iris_train <- prodNA(iris[1:100,], noNA = 0.1)
-  iris_test <- prodNA(iris[101:150,], noNA = 0.1)
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
   iris_train_tbl <- as_tibble(iris_train)
   iris_test_tbl <- as_tibble(iris_test, rownames = NA)
 
@@ -90,7 +90,7 @@ test_that("prediction on training set is the same as imputation", {
 
   data(iris)
   set.seed(2022)
-  iris_mis <- prodNA(iris, noNA = 0.1)
+  iris_mis <- produce_NA(iris, proportion = 0.1)
 
   set.seed(2022)
   missForest_object <- missForestPredict::missForest(iris_mis, verbose = FALSE)
@@ -118,7 +118,7 @@ test_that("imputation is the same for factor and character", {
 
   data(iris)
 
-  iris <- prodNA(iris, noNA = 0.2)
+  iris <- produce_NA(iris, proportion = 0.2)
 
   missForest_object <- missForestPredict::missForest(iris, verbose = FALSE, seed = 2022)
   iris_imp_df <- missForest_object$ximp

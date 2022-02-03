@@ -13,13 +13,14 @@
 #' @return TODO
 #' @examples
 #' data(iris)
-#' iris_mis <- prodNA(iris, noNA = 0.1)
+#' iris_mis <- produce_NA(iris, proportion = 0.1)
 #' imputation_object <- missForest(iris_mis)
 #' iris_imp <- imputation_object$ximp
 #' @export
 
 missForest <- function(xmis,
                        maxiter = 10,
+                       OOB_weights = NULL,
                        decreasing = FALSE,
                        force = FALSE,
                        initialization = "median/mode",
@@ -50,9 +51,13 @@ missForest <- function(xmis,
     }
   }
 
+  if (!is.null(OOB_weights) & length(OOB_weights) != ncol(xmis))
+    stop(sprintf("OOB_weights has to be a vector of length %s (number of columns", ncol(xmis)))
 
   p <- ncol(xmis)
   col_names <- colnames(xmis)
+
+  if(is.null(OOB_weights)) OOB_weights <- rep(1, p)
 
   ## remove completely missing variables
   if (any(apply(is.na(xmis), 2, sum) == nrow(xmis)))
@@ -136,7 +141,7 @@ missForest <- function(xmis,
   models <- list()
 
   ## iterate missForest
-  while ((sum(err_new) < sum(err_old) | force) & iter < maxiter){
+  while ((weighted.mean(err_new, w = OOB_weights) < weighted.mean(err_old, w = OOB_weights) | force) & iter < maxiter){
 
     models[[iter + 1]] <- list()
 
@@ -253,7 +258,8 @@ missForest <- function(xmis,
       cat(sprintf("    OOB errors MSE:   %s\n", paste(err_OOB_corrected, collapse = ", ")))
       cat(sprintf("    OOB errors NMSE:  %s\n", paste(err_new, collapse = ", ")))
       cat(sprintf("    differences:      %s\n", paste(err_old - err_new, collapse = ", ")))
-      cat(sprintf("    difference total: %s\n", paste(sum(err_old) - sum(err_new), collapse = ", ")))
+      cat(sprintf("    difference total: %s\n",
+                  paste(weighted.mean(err_old, w = OOB_weights) - weighted.mean(err_new, w = OOB_weights), collapse = ", ")))
       cat(sprintf("    time:             %s seconds\n\n", delta.start[3]))
     }
   }#end while

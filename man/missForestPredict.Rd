@@ -4,12 +4,14 @@
 \alias{missForestPredict}
 \title{Imputes a new dataframe based on the missForest models}
 \usage{
-missForestPredict(missForestObj, newdata)
+missForestPredict(missForestObj, newdata, x_init = NULL)
 }
 \arguments{
 \item{missForestObj}{missForest object as returned by the missForest function}
 
 \item{newdata}{new data to impute. The column names should be the same as in the imputation model}
+
+\item{x_init}{initialization dataframe in case custom initialization mode has been used}
 }
 \value{
 an imputed dataframe
@@ -25,8 +27,8 @@ id_test <- sample(1:nrow(iris), floor(nrow(iris)/3))
 iris_train <- iris[-id_test,]
 iris_test <- iris[id_test,]
 
-iris_train_miss <- prodNA(iris_train, noNA = 0.1)
-iris_test_miss <- prodNA(iris_test, noNA = 0.1)
+iris_train_miss <- produce_NA(iris_train, proportion = 0.1)
+iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
 
 # impute train and learn imputation models
 iris_train_imp_obj <- missForest(iris_train_miss)

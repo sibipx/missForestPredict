@@ -4,7 +4,17 @@
 \alias{missForest}
 \title{Imputes a matrix / dataframe and returns imputation models to be used on new observations}
 \usage{
-missForest(xmis, maxiter = 10, decreasing = FALSE, verbose = FALSE, ...)
+missForest(
+  xmis,
+  maxiter = 10,
+  OOB_weights = NULL,
+  decreasing = FALSE,
+  force = FALSE,
+  initialization = "median/mode",
+  x_init = NULL,
+  verbose = FALSE,
+  ...
+)
 }
 \arguments{
 \item{xmis}{matrix / dataframe containing missing values}
@@ -12,6 +22,10 @@ missForest(xmis, maxiter = 10, decreasing = FALSE, verbose = FALSE, ...)
 \item{maxiter}{maximum number of iterations}
 
 \item{decreasing}{(boolean) if TRUE the columns are sorted with decreasing amount of missing values}
+
+\item{initialization}{initialization method before running RF models; supported: mean/mode, median/mode and custom}
+
+\item{x_init}{if initialization = custom; a compplete dataframe to be used as initialization}
 
 \item{verbose}{(boolean) if TRUE then missForest returns error estimates, runtime and if available true error during iterations}
 
@@ -25,7 +39,7 @@ Imputes a matrix / dataframe and returns imputation models to be used on new obs
 }
 \examples{
 data(iris)
-iris_mis <- prodNA(iris, noNA = 0.1)
+iris_mis <- produce_NA(iris, proportion = 0.1)
 imputation_object <- missForest(iris_mis)
 iris_imp <- imputation_object$ximp
 }
