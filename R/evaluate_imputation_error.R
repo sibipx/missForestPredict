@@ -1,10 +1,12 @@
-#' Title
+#' Evaluate the imputation error when true values are known.
 #'
-#' @param ximp imputed matrix / dataframe
-#' @param xmis original matrix / dataframe with missing values
-#' @param xtrue true matrix / dataframe (or any matrix to be compared with ximp)
+#' Evaluate the imputation error when true values are known. Useful when missing values are simulated.
 #'
-#' @return named vector of errors
+#' @param ximp imputed dataframe
+#' @param xmis original dataframe with missing values
+#' @param xtrue true dataframe with no missing values
+#'
+#' @return dataframe with variables in rows and performance measures in columns
 #' @export
 
 
@@ -27,17 +29,12 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue){
 
   if (any(is.na(varType))) stop("Only numeric or factor columns are supported. Logical or other types are not supported.")
 
-  # initialize error lists per variable
-  err_MSE <- rep(NA, p)
-  names(err_MSE) <- col_names
-  err_NMSE <- rep(NA, p)
-  names(err_NMSE) <- col_names
-  err_BRIER <- rep(NA, p)
-  names(err_BRIER) <- col_names
-  err_NBRIER <- rep(NA, p)
-  names(err_NBRIER) <- col_names
-  err_MER <- rep(NA, p)
-  names(err_MER) <- col_names
+  results <- data.frame(variable = col_names,
+                        MSE = NA_real_,
+                        NMSE = NA_real_,
+                        #BRIER = NA_real_,
+                        #NMBRIER = NA_real_,
+                        MER = NA_real_)
 
   # localize missing
   NAloc <- is.na(xmis)
@@ -50,27 +47,31 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue){
     if (varType[[col]] == "numeric") {
 
       if (length(ximp[misi,col]) > 0) {
-        # calculate MSE
-        err_MSE[col] <- mse(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
-        # calculate NMSE
-        err_NMSE[col] <- nmse(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
+        results[results$variable == col, "MSE"] <- mse(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
+        results[results$variable == col, "NMSE"] <- nmse(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
       } else {
-        err_MSE[col] <- 0
-        err_NMSE[col] <- 0
+        results[results$variable == col, "MSE"] <- 0
+        results[results$variable == col, "NMSE"] <- 0
       }
 
     } else {
-      # calculate BRIER
+      if (length(ximp[misi,col]) > 0) {
+        # TODO: after I return probabilities for binary variables
+        # calculate BRIER
+        #results["BRIER", col] <- BS(...)
+        # calculate normalized BRIER
 
-      # calculate normalized BRIER
-
-      # calculate missclassification error
-      err_MER[col] <- mer(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
+        # calculate missclassification error
+        #err_MER[col] <- mer(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
+        results[results$variable == col, "MER"] <- mer(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
+      } else {
+        results[results$variable == col, "MER"] <- 0
+      }
 
     }
 
   }
 
-  return(list(MSE = err_MSE, NMSE = err_NMSE, MER = err_MER))
+  return(results)
 
 }
