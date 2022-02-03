@@ -39,8 +39,6 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue){
   # localize missing
   NAloc <- is.na(xmis)
 
-  # TODO: test for tibble - DROP
-
   for (col in col_names){
     misi <- NAloc[,col]
 
