@@ -12,6 +12,8 @@ Changes done (for my record):
 
 - save initialization
 
+- support for custom initialization
+
 - build models for non-missing variables
 
 - save models
@@ -21,6 +23,8 @@ Changes done (for my record):
 - changed convergence criteria: OOB iso apparent performance
 
 - changed convergence criteria: NMSE for both continuous and categorical variables (multiclass included)
+
+- convergence criteria: custom weighting of the errors for each varible
 
 - better error monitoring (partially TODO)
 

@@ -43,7 +43,7 @@ The models are applied iteratively to "predict" the missing values of each varia
 
 **Convergence criteria**
 
-At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables are averaged (TODO: implement weighted average)
+At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the *OOB_weights* parameter. By default all variables weight equally in the convergence criteria. 
 
 The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score).
 
@@ -133,7 +133,7 @@ We produce 10% random missing values on each column in both the training and the
 
 ```{r}
 set.seed(2022)
-iris_train_miss <- produce_NA(iris_train, c = 0.1)
+iris_train_miss <- produce_NA(iris_train, proportion = 0.1)
 iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
 
 head(iris_train_miss)
@@ -275,21 +275,8 @@ head(diamonds_test_imp)
 
 ```
 
-Alternatively, the *maxiter* parameter can be set to a lower number (the default is 10).
-
-```{r}
-#set.seed(2022)
-#diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss, verbose = TRUE, maxiter = 2)
-#
-## impute test set
-#diamonds_train_imp_object$ximp <- NULL 
-#diamonds_test_imp <- missForestPredict::missForestPredict(diamonds_train_imp_object, newdata = diamonds_test_miss)
-#
-#head(diamonds_test_imp)
-
-```
-
-Note that not all arguments to ranger function are supported. Arguments that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic arguments that can be applied to all variables are supported (like: *num.trees, mtry, min.node.size, max.depth, replce,* ...)
+Alternatively, the *maxiter* parameter can be set to a lower number (the default is 10) or other *ranger* parameters can be adapted.
+Note that not all arguments to ranger function are supported. Arguments that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic arguments that can be applied to all variables are supported (like: *num.trees, mtry, min.node.size, max.depth, replace,* ...)
 
 ## Perform imputation in descending order 
 
@@ -297,20 +284,71 @@ TODO: test if it's worth it
 
 ## Custom initialization
 
-The parameter *initialization* suppots three values: *mean/mode*, *median/mode* and *custom*. The default is median/mode, which will initialize each variable with the median (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable. 
+The parameter *initialization* supports three values: *mean/mode*, *median/mode* and *custom*. The default is median/mode, which will initialize each variable with the median (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable. 
 
 When *custom* is used, a complete dataframe is expected in *x_init*. For example, the imputations of another imputation method can be used as initialization. When *custom* is used in *missForest* function, an initialization dataframe has to be passed to the *missForestPredict* function later on too. 
 
-We will exemplify this with an initialization via linear models on the *diamonds* dataset. Let's assume that variables X and Y are known to be never missing. We will regress the other variables on these two variables and save the linear models to be applied on the test set afterwards.
+We will exemplify this with an initialization via linear models on the *iris* dataset. Let's assume that variables Petal.Width and Species are known to be never missing. We will regress the other variables on these two variables and save the linear models to be applied on the test set afterwards.
 
 ```{r}
 
-# foo
+data(iris)
+
+# split train / test
+N <- nrow(iris)
+n_test <- floor(N/3)
+
+set.seed(2022)
+id_test <- sample(1:N, n_test)
+
+iris_train <- iris[-id_test,]
+iris_test <- iris[id_test,]
+
+set.seed(2022)
+iris_train_miss <- produce_NA(iris_train, proportion = c(0.2, 0.2, 0.2, 0, 0))
+iris_test_miss <- produce_NA(iris_test, proportion = c(0.2, 0.2, 0.2, 0, 0))
+
+# build linear models for Sepal.Length, Sepal.Width, Petal.Length using complete cases for each variable
+fit_1 <- lm(Sepal.Length ~ ., data = iris_train_miss[!is.na(iris_train_miss$Sepal.Length), 
+                                                     c("Sepal.Length", "Petal.Width", "Species")])
+fit_2 <- lm(Sepal.Width ~ ., data = iris_train_miss[!is.na(iris_train_miss$Sepal.Width), 
+                                                    c("Sepal.Width", "Petal.Width", "Species")])
+fit_3 <- lm(Petal.Length ~ ., data = iris_train_miss[!is.na(iris_train_miss$Petal.Length), 
+                                                     c("Petal.Length", "Petal.Width", "Species")])
+
+# impute training with predictions of linear model
+iris_train_init <- iris_train_miss
+iris_train_init$Sepal.Length[is.na(iris_train_init$Sepal.Length)] <- 
+  predict(fit_1, iris_train_init[is.na(iris_train_init$Sepal.Length), c("Petal.Width", "Species")])
+iris_train_init$Sepal.Width[is.na(iris_train_init$Sepal.Width)] <- 
+  predict(fit_2, iris_train_init[is.na(iris_train_init$Sepal.Width), c("Petal.Width", "Species")])
+iris_train_init$Petal.Length[is.na(iris_train_init$Petal.Length)] <- 
+  predict(fit_3, iris_train_init[is.na(iris_train_init$Petal.Length), c("Petal.Width", "Species")])
+
+# impute the training set using this initialization
+set.seed(2022)
+iris_train_imp_obj <- missForest(iris_train_miss, verbose = TRUE, 
+                                 OOB_weights = c(1,1,1,0,0),
+                                 initialization = "custom", 
+                                 x_init = iris_train_init)
+
+# build test set initialization using the linear models learned on training
+iris_test_init <- iris_test_miss
+iris_test_init$Sepal.Length[is.na(iris_test_init$Sepal.Length)] <- 
+  predict(fit_1, iris_test_init[is.na(iris_test_init$Sepal.Length), c("Petal.Width", "Species")])
+iris_test_init$Sepal.Width[is.na(iris_test_init$Sepal.Width)] <- 
+  predict(fit_2, iris_test_init[is.na(iris_test_init$Sepal.Width), c("Petal.Width", "Species")])
+iris_test_init$Petal.Length[is.na(iris_test_init$Petal.Length)] <- 
+  predict(fit_3, iris_test_init[is.na(iris_test_init$Petal.Length), c("Petal.Width", "Species")])
+
+# impute test set
+iris_test_imp <- missForestPredict(iris_train_imp_obj, newdata = iris_test_miss, x_init = iris_test_init)
+
+evaluate_imputation_error(iris_test_imp, iris_test_miss, iris_test)
+evaluate_imputation_error(iris_test_init, iris_test_miss, iris_test)
 
 ```
 
-
-
-
+Note that we chose to set the *OOB_weights* parameter so that the errors of the last 2 variables are not taken into account when calculating the convergence criteria. 
 
 # References 
