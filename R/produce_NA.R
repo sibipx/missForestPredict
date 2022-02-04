@@ -1,12 +1,12 @@
 #' Produces a dataframe with missing values
 #'
-#' @param x dataframe
-#' @param proportion percentage of NA on each column
+#' @param x a dataframe
+#' @param proportion proportion of missing values to be produced; a vector of size \code{ncol(x)} or a single value to be applied to all variables in the dataframe
 #'
 #' @return dataframe with missing values
 #' @export
 
-produce_NA <- function(x, proportion = 0.3){
+produce_NA <- function(x, proportion = 0.1){
   n <- nrow(x)
   p <- ncol(x)
 

@@ -120,16 +120,20 @@ test_that("imputation is the same for factor and character", {
 
   iris <- produce_NA(iris, proportion = 0.2)
 
-  missForest_object <- missForestPredict::missForest(iris, verbose = FALSE, seed = 2022)
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris, verbose = FALSE)
   iris_imp_df <- missForest_object$ximp
 
   iris_char <- iris
   iris_char$Species <- as.character(iris_char$Species)
 
-  missForest_object_char <- missForestPredict::missForest(iris_char, verbose = FALSE, seed = 2022)
+  set.seed(2022)
+  missForest_object_char <- missForestPredict::missForest(iris_char, verbose = FALSE)
   iris_imp_df_char <- missForest_object_char$ximp
 
   iris_imp_df_char$Species <- as.factor(iris_imp_df_char$Species)
+
+  head(iris_imp_df_char)
 
   expect_equal(iris_imp_df, iris_imp_df_char)
 

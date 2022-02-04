@@ -4,12 +4,12 @@
 \alias{produce_NA}
 \title{Produces a dataframe with missing values}
 \usage{
-produce_NA(x, proportion = 0.3)
+produce_NA(x, proportion = 0.1)
 }
 \arguments{
-\item{x}{dataframe}
+\item{x}{a dataframe}
 
-\item{proportion}{percentage of NA on each column}
+\item{proportion}{proportion of missing values to be produced; a vector of size \code{ncol(x)} or a single value to be applied to all variables in the dataframe}
 }
 \value{
 dataframe with missing values
