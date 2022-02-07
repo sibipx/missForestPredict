@@ -153,7 +153,7 @@ missForest <- function(xmis,
 
     if (verbose) cat("  missForest iteration", iter, "in progress...")
 
-    t.start <- proc.time()
+    t_start <- proc.time()
     ximp_old <- ximp
 
     for (col in impute_sequence){
@@ -236,11 +236,11 @@ missForest <- function(xmis,
 
     # return error monitoring
     if (verbose){
-      delta.start <- proc.time() - t.start
+      delta_start <- proc.time() - t_start
       cat(sprintf("    OOB errors MSE:             %s\n", paste(err_MSE[iter,], collapse = ", ")))
       cat(sprintf("    OOB errors NMSE:            %s\n", paste(err_NMSE[iter,], collapse = ", ")))
       cat(sprintf("    (weigthed) difference NMSE: %s\n", paste(NMSE_err_old - NMSE_err_new, collapse = ", ")))
-      cat(sprintf("    time:                       %s seconds\n\n", delta.start[3]))
+      cat(sprintf("    time:                       %s seconds\n\n", delta_start[3]))
     }
 
     iter <- iter + 1
