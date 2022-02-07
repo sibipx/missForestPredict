@@ -17,11 +17,13 @@
 #'
 #' @return Object of class \code{missForest} with elements
 #'     \item{\code{ximp}}{dataframe with imputed values}
-#'     \item{\code{OOBerror}}{TODO! this and corrected!}
-#'     \item{\code{init}}{NULL if custome initalization is used; otherwise list of mean/mode or median/mode for each variable;}
-#'     \item{\code{models}}{list of random forest models for each iteration}
+#'     \item{\code{init}}{x_init if custom initalization is used; otherwise list of mean/mode or median/mode for each variable}
+#'     \item{\code{initialization}}{value of initialization parameter}
 #'     \item{\code{impute_sequence}}{vector variable names in the order in which imputation has been run}
 #'     \item{\code{maxiter}}{maxiter parameter as passed to the function}
+#'     \item{\code{models}}{list of random forest models for each iteration}
+#'     \item{\code{err_MSE}}{dataframe with MSE values for each iteration and each variable}
+#'     \item{\code{err_NMSE}}{dataframe with NMSE values for each iteration and each variable}
 #'
 #' @examples
 #' data(iris)
@@ -66,14 +68,12 @@ missForest <- function(xmis,
   if (!is.null(OOB_weights) & length(OOB_weights) != ncol(xmis))
     stop(sprintf("OOB_weights has to be a vector of length %s (number of columns", ncol(xmis)))
 
-  p <- ncol(xmis)
-  col_names <- colnames(xmis)
-
-  if(is.null(OOB_weights)) OOB_weights <- rep(1, p)
-
-  ## remove completely missing variables
   if (any(apply(is.na(xmis), 2, sum) == nrow(xmis)))
     stop("There are variables completely missing in the input data. Remove these before imputation")
+
+  p <- ncol(xmis)
+  col_names <- colnames(xmis)
+  if(is.null(OOB_weights)) OOB_weights <- rep(1, p)
 
   # check variable types
   column_class <- function(x) ifelse(is.numeric(x), "numeric",
@@ -86,7 +86,7 @@ missForest <- function(xmis,
   # perform initialization (mean/mode imputation)
   if (initialization == "custom") {
     ximp <- x_init
-    var_single_init <- NULL
+    var_init <- x_init
 
     # make all integer columns double (imputed values might not be integer)
     ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
@@ -97,8 +97,8 @@ missForest <- function(xmis,
     # make all integer columns double (imputed values might not be integer)
     ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
 
-    var_single_init <- vector("list", p)
-    names(var_single_init) <- col_names
+    var_init <- vector("list", p)
+    names(var_init) <- col_names
 
     for (col in col_names) {
       if (varType[[col]] == "numeric") {
@@ -109,7 +109,7 @@ missForest <- function(xmis,
           mean_col <- median(xmis[, col, drop = TRUE], na.rm = TRUE)
         }
 
-        var_single_init[[col]] <- mean_col
+        var_init[[col]] <- mean_col
 
         # initialize ximp column
         ximp[is.na(xmis[, col, drop = TRUE]), col] <- mean_col
@@ -121,7 +121,7 @@ missForest <- function(xmis,
         # if there are several classes with equal number of samples, sample one at random
         mode_col <- sample(names(which(max_level == summary_col)), 1)
         # keep mode
-        var_single_init[[col]] <- mode_col
+        var_init[[col]] <- mode_col
 
         # initialize ximp column
         ximp[is.na(xmis[, col, drop = TRUE]),col] <- mode_col
@@ -142,16 +142,16 @@ missForest <- function(xmis,
   err_NMSE <- data.frame(matrix(ncol = p, nrow = 0))
   colnames(err_NMSE) <- col_names
 
-  iter <- 0
+  iter <- 1
   models <- list()
   convergence_criteria <- TRUE
 
   # iterate RF models
-  while (convergence_criteria & iter < maxiter){
+  while (convergence_criteria & iter <= maxiter){
 
-    models[[iter + 1]] <- list()
+    models[[iter]] <- list()
 
-    if (verbose) cat("  missForest iteration", iter+1, "in progress...")
+    if (verbose) cat("  missForest iteration", iter, "in progress...")
 
     t.start <- proc.time()
     ximp_old <- ximp
@@ -169,7 +169,7 @@ missForest <- function(xmis,
         RF <- ranger(x = obsX, y = obsY, ...)
 
         # save model
-        models[[iter + 1]][[col]] <- RF
+        models[[iter]][[col]] <- RF
 
         # if the column is not complete, impute the missing values
         if (nrow(misX) > 0) {
@@ -180,9 +180,9 @@ missForest <- function(xmis,
         ximp[misi, col] <- misY
 
         # save the OOB error for convergence (NMSE)
-        err_NMSE[iter + 1, col] <- RF$prediction.error / var(ximp[obsi, col])
+        err_NMSE[iter, col] <- RF$prediction.error / var(ximp[obsi, col])
         # save the OOB error (MSE)
-        err_MSE[iter + 1, col] <- mse(RF$predictions, ximp[obsi, col, drop = TRUE])
+        err_MSE[iter, col] <- mse(RF$predictions, ximp[obsi, col, drop = TRUE])
 
       } else {
         obsY <- factor(obsY, levels = unique(ximp[, col, drop = TRUE]))
@@ -194,7 +194,7 @@ missForest <- function(xmis,
           RF <- ranger(x = obsX, y = obsY, probability = TRUE, ...)
 
           # save model
-          models[[iter + 1]][[col]] <- RF
+          models[[iter]][[col]] <- RF
 
           # if the column is not complete, impute the missing values
           if (nrow(misX) > 0) {
@@ -214,24 +214,17 @@ missForest <- function(xmis,
           ximp_binary <- make_binary(factor(ximp[, col, drop = TRUE], levels = unique(ximp[, col, drop = TRUE])))
           col_order <- colnames(ximp_binary)
 
-          # if a class is missing, add the class
-          OOB_predictions <- RF$predictions
-
           # save OOB error (NMSE)
-          err_NMSE[iter + 1, col] <- BSnorm(OOB_predictions[,col_order], ximp_binary[obsi,])
+          err_NMSE[iter, col] <- BSnorm(RF$predictions[,col_order], ximp_binary[obsi,])
           # save OOB error (MSE = Brier score divided by number of categories)
-          err_MSE[iter + 1, col] <- BS(OOB_predictions[,col_order], ximp_binary[obsi,])/ncol(ximp_binary[obsi,])
+          err_MSE[iter, col] <- BS(RF$predictions[,col_order], ximp_binary[obsi,])/ncol(ximp_binary[obsi,])
         }
       }
-
     }
 
     if (verbose) cat('done!\n')
 
-    iter <- iter + 1
-
     # check convergence
-    #convergence_criteria <- weighted.mean(err_new, w = OOB_weights) < weighted.mean(err_old, w = OOB_weights) | force
     NMSE_err_new <- weighted.mean(err_NMSE[iter,], w = OOB_weights)
     if (iter == 1) {
       NMSE_err_old <- weighted.mean(rep(1, p), w = OOB_weights)
@@ -250,14 +243,15 @@ missForest <- function(xmis,
       cat(sprintf("    time:                       %s seconds\n\n", delta.start[3]))
     }
 
+    iter <- iter + 1
 
-  }#end while
+  } # end while
 
   # output
   if (iter != maxiter) ximp <- ximp_old
 
   out <- list(ximp = ximp,
-              init = var_single_init,
+              init = var_init,
               initialization = initialization,
               impute_sequence = impute_sequence,
               maxiter = maxiter,
