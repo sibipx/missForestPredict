@@ -150,10 +150,18 @@ missForest <- function(xmis,
   err_OOB_corrected <- numeric(p)
   names(err_OOB_corrected) <- col_names
 
+  # keep MSE and NMSE
+  err_MSE <- data.frame(matrix(ncol = p, nrow = 0))
+  colnames(err_MSE) <- col_names
+  err_NMSE <- data.frame(matrix(ncol = p, nrow = 0))
+  colnames(err_NMSE) <- col_names
+
   models <- list()
 
-  ## iterate missForest
-  while ((weighted.mean(err_new, w = OOB_weights) < weighted.mean(err_old, w = OOB_weights) | force) & iter < maxiter){
+  convergence_criteria <- TRUE
+
+  # iterate RF models
+  while (convergence_criteria & iter < maxiter){
 
     models[[iter + 1]] <- list()
 
@@ -196,9 +204,11 @@ missForest <- function(xmis,
 
         # save the OOB error for convergence (NMSE)
         err_new[col] <- err_OOB[col] / var(ximp[obsi, col])
+        err_NMSE[iter + 1, col] <- err_OOB[col] / var(ximp[obsi, col])
         #err_new[col] <- nmse(RF$predictions, ximp[obsi, col]) # this should be the same
         # save the OOB error (MSE)
         err_OOB_corrected[col] <- mse(RF$predictions, ximp[obsi, col, drop = TRUE])
+        err_MSE[iter + 1, col] <- mse(RF$predictions, ximp[obsi, col, drop = TRUE])
 
       } else {
         obsY <- factor(obsY, levels = unique(ximp[, col, drop = TRUE]))
@@ -250,9 +260,11 @@ missForest <- function(xmis,
           # multiclass.Brier(RF$predictions, ximp[obsi,col]) # multiclass.Brier
           # BSnorm(RF$predictions, ximp_new_binary[obsi,]) # THIS!
           err_new[col] <- BSnorm(OOB_predictions[,col_order], ximp_binary[obsi,]) # preserve column order
+          err_NMSE[iter + 1, col] <- BSnorm(OOB_predictions[,col_order], ximp_binary[obsi,])
 
           # save OOB error (MSE = Brier score divided by number of categories)
           err_OOB_corrected[col] <- BS(OOB_predictions[,col_order], ximp_binary[obsi,])/ncol(ximp_binary[obsi,])
+          err_MSE[iter + 1, col] <- BS(OOB_predictions[,col_order], ximp_binary[obsi,])/ncol(ximp_binary[obsi,])
         }
       }
 
@@ -261,6 +273,9 @@ missForest <- function(xmis,
     if (verbose) cat('done!\n')
 
     iter <- iter + 1
+
+    #err_MSE[iter,] <- err_OOB_corrected
+    #err_NMSE[iter,] <- err_new
 
     ## return status output, if desired
     if (verbose){
@@ -274,6 +289,17 @@ missForest <- function(xmis,
                   paste(weighted.mean(err_old, w = OOB_weights) - weighted.mean(err_new, w = OOB_weights), collapse = ", ")))
       cat(sprintf("    time:             %s seconds\n\n", delta.start[3]))
     }
+
+    # check convergence
+    #convergence_criteria <- weighted.mean(err_new, w = OOB_weights) < weighted.mean(err_old, w = OOB_weights) | force
+    NMSE_err_new <- weighted.mean(err_NMSE[iter,], w = OOB_weights)
+    if (iter == 1) {
+      NMSE_err_old <- weighted.mean(rep(1, p), w = OOB_weights)
+    } else {
+      NMSE_err_old <- weighted.mean(err_NMSE[iter - 1,], w = OOB_weights)
+    }
+
+    convergence_criteria <- NMSE_err_new < NMSE_err_old | force
   }#end while
 
   ## produce output w.r.t. stopping rule
@@ -289,6 +315,8 @@ missForest <- function(xmis,
   out$models <- models
   out$impute_sequence <- impute_sequence
   out$maxiter <- maxiter
+  out$err_MSE <- err_MSE
+  out$err_NMSE <- err_NMSE
 
   class(out) <- 'missForest'
   return(out)
