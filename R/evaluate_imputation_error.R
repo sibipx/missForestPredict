@@ -5,14 +5,13 @@
 #' @param ximp imputed dataframe
 #' @param xmis original dataframe with missing values
 #' @param xtrue true dataframe with no missing values
+#' @param all calculate error on all observations (TRUE) or only on missing observations (FALSE)
 #'
 #' @return dataframe with variables in rows and performance measures in columns
 #' @export
 
 
-evaluate_imputation_error <- function(ximp, xmis, xtrue){
-
-  p <- ncol(xtrue)
+evaluate_imputation_error <- function(ximp, xmis, xtrue, all = FALSE){
 
   col_names <- colnames(xtrue)
   col_names_ximp <- colnames(ximp)
@@ -32,21 +31,32 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue){
   results <- data.frame(variable = col_names,
                         MSE = NA_real_,
                         NMSE = NA_real_,
-                        #BRIER = NA_real_,
-                        #NMBRIER = NA_real_,
                         MER = NA_real_)
 
   # localize missing
   NAloc <- is.na(xmis)
+  ind_all <- 1:nrow(ximp)
 
   for (col in col_names){
     misi <- NAloc[,col]
 
+    if (all) {
+      ind <- ind_all
+    } else {
+      ind <- misi
+    }
+
     if (varType[[col]] == "numeric") {
 
       if (length(ximp[misi,col]) > 0) {
-        results[results$variable == col, "MSE"] <- mse(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
-        results[results$variable == col, "NMSE"] <- nmse(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
+        #results[results$variable == col, "MSE"] <- mse(ximp[misi,col, drop = TRUE], xtrue[misi, col, drop = TRUE])
+        #results[results$variable == col, "NMSE"] <- nmse(ximp[misi,col, drop = TRUE], xtrue[misi, col, drop = TRUE])
+
+        #results[results$variable == col, "MSE"] <- mse(ximp[,col, drop = TRUE], xtrue[,col, drop = TRUE])
+        #results[results$variable == col, "NMSE"] <- nmse(ximp[,col, drop = TRUE], xtrue[,col, drop = TRUE])
+
+        results[results$variable == col, "MSE"] <- mse(ximp[ind, col, drop = TRUE], xtrue[ind, col, drop = TRUE])
+        results[results$variable == col, "NMSE"] <- nmse(ximp[ind, col, drop = TRUE], xtrue[ind, col, drop = TRUE])
       } else {
         results[results$variable == col, "MSE"] <- 0
         results[results$variable == col, "NMSE"] <- 0
@@ -61,7 +71,11 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue){
 
         # calculate missclassification error
         #err_MER[col] <- mer(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
-        results[results$variable == col, "MER"] <- mer(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
+        #results[results$variable == col, "MER"] <- mer(ximp[misi,col, drop = TRUE], xtrue[misi,col, drop = TRUE])
+
+        #results[results$variable == col, "MER"] <- mer(ximp[,col, drop = TRUE], xtrue[,col, drop = TRUE])
+
+        results[results$variable == col, "MER"] <- mer(ximp[ind, col, drop = TRUE], xtrue[ind, col, drop = TRUE])
       } else {
         results[results$variable == col, "MER"] <- 0
       }
