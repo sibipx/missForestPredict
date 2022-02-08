@@ -258,7 +258,7 @@ head(diamonds_test_miss)
 
 ```
 
-The function *missForest* supports additional arguments to be passed to the *ranger* function. By default, the default values of *ranger* are used. By default, the number of trees in the forest is 500. This can be overridden by passing *num.trees = 100*, for example. Using less trees will prove to be computationally more efficient.
+The function *missForest* supports additional parameters to be passed to the *ranger* function. By default, the default values of *ranger* are used. By default, the number of trees in the forest is 500. This can be overridden by passing *num.trees = 100*, for example. Using less trees will prove to be computationally more efficient.
 
 ```{r}
 set.seed(2022)
@@ -276,7 +276,7 @@ head(diamonds_test_imp)
 ```
 
 Alternatively, the *maxiter* parameter can be set to a lower number (the default is 10) or other *ranger* parameters can be adapted.
-Note that not all arguments to ranger function are supported. Arguments that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic arguments that can be applied to all variables are supported (like: *num.trees, mtry, min.node.size, max.depth, replace,* ...)
+Note that not all parameters to ranger function are supported. Parameters that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic parameters that can be applied to all variables are supported (like: *num.trees, mtry, min.node.size, max.depth, replace,* ...)
 
 ## Perform imputation in descending order 
 
