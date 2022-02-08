@@ -35,7 +35,7 @@ The imputation algorithm is based on random forests [@breiman01] as implemented 
 
 **Saved models and initialization**
 
-The missing data in each column is initialized the mean/mode (or median/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. 
+The missing data in each column is initialized the median/mode (or mean/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. 
 
 **Imputation of new observations**
 
@@ -45,39 +45,9 @@ The models are applied iteratively to "predict" the missing values of each varia
 
 At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the *OOB_weights* parameter. By default all variables weight equally in the convergence criteria. 
 
-The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score).
+The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score) [@brier1950verification].
 
-Continuous variables (including ordinal factors:
-
-$NMSE = \frac{\sum_{i=1}^{N}(x_i - \hat{x_i})^2}{\sum_{i=1}^{N} (x_i - \bar{x})^2} = 1 - R^2$, $i = 1, 2, ... N$
-
-$\bar{x}$ = the mean value of variable x
-
-$\hat{x_i}$ = prediction (imputation) for observation i 
-
-$N$ = number of observations
-
-Categorical variables:
-
-$NMSE = \frac{BS}{BSref} = 1 - BSS$
-
-$BS =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{ij} - x_{ij})^2$, $i = 1, 2, ... N$, $j = 1, 2, ... R$
-
-$BSref =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{j} - x_{ij})^2=1-\sum_{j=1}^{R}p_j^2$
-
-$p_{ij}$ = prediction (probability) for observation i and class j
-
-$p_{j}$ = proportion of the event in class j
-
-$N$ = number of observations
-
-$R$ = number of classes
-
-The Brier Score ($BS$) is calculated as the sum of squared distances between the predictions (as probabilities) and the true values (0 or 1) for each class. The reference Brier Score ($BSref$) is calculated as the Brier Score of a predictor that predicts the proportion of the event in each class [@brier1950verification].
-
-**Imputation error monitoring**
-
-TODO - separate vignette
+More information on convergence criteria and error monitoring is provided in a separate vignette,
 
 **Extended options for binary variables**
 
@@ -141,7 +111,7 @@ head(iris_test_miss)
 
 ```
 
-We will impute the training set and learn the random forest imputation models at the same time using the function *missForest*. Observe that we set *verbose = TRUE* to monitor the number of iterations and the errors. More information on error monitoring is provided in a separate vignette. (TODO)
+We will impute the training set and learn the random forest imputation models at the same time using the function *missForest*. Observe that we set *verbose = TRUE* to monitor the number of iterations and the errors. More information on error monitoring is provided in a separate vignette.
 
 ```{r}
 set.seed(2022)
@@ -160,7 +130,7 @@ head(iris_train_imp)
 
 We will further impute the test set using the learned imputation models. The function *missForestPredict* will:
 
-- initialize the missing values in each variable with the initialization "learned" from the training set (e.g: mean / mode)
+- initialize the missing values in each variable with the initialization "learned" from the training set (median/mode)
 
 - imperatively predict the missing values of each variable using the learned random forest models for each iteration
 
@@ -189,23 +159,7 @@ print(single_observation_imp)
 
 ```
 
-Imputation can be done even when all variables are missing for a single new observation. This is of course, not an ideal situation and probably not realistic, but it can be technically handled by the *missForestPredict* function. The observation will be initialized with the "mean observation" and the random forest models will impute iteratively. 
-
 *missForestPredict* package can impute observations with new missingness patterns not present in the training data as well as variables with no missingness (complete) in training data. The inialization and the random forest imputation models are "learned" for all variables in the dataset, regardless of the amount of missingness. The only condition is that the new observations follow the same data types as the ones in the training set. 
-
-```{r}
-single_observation <- iris_test_miss[2,]
-single_observation[,1:4] <- NA_real_
-
-print(single_observation)
-
-single_observation_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
-                                                               newdata = single_observation)
-
-print(single_observation_imp)
-
-```
-
 
 ## Predict without storing the imputed matrix
 
@@ -226,6 +180,22 @@ iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object,
                                                       newdata = iris_test_miss)
 
 head(iris_test_imp)
+```
+
+In *ximp* is set to NULL by mistake, and the training set imputation it lost, it can be recovered without rerunning the algorithm. 
+Imputing the training set with the function *missForestPredict* will give the same results as the initial results of *missForest* function because the same models are applied to the variables in the same order and for the same number of iterations.
+
+```{r}
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, verbose = TRUE)
+
+iris_train_imp <- iris_train_imp_object$ximp
+iris_train_imp_object$ximp <- NULL 
+
+iris_train_imp_2 <-  missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_train_miss)
+
+identical(iris_train_imp, iris_train_imp_2)
 ```
 
 ## Impute larger datasets by adapting *num.trees* or *max.iter*
@@ -258,7 +228,7 @@ head(diamonds_test_miss)
 
 ```
 
-The function *missForest* supports additional parameters to be passed to the *ranger* function. By default, the default values of *ranger* are used. By default, the number of trees in the forest is 500. This can be overridden by passing *num.trees = 100*, for example. Using less trees will prove to be computationally more efficient.
+The function *missForest* supports additional parameters to be passed to the *ranger* function. By default, the default values of *ranger* are used (e.g. the number of trees in the forest is 500). This can be overridden by passing *num.trees = 100*, for example. Using less trees will prove to be computationally more efficient.
 
 ```{r}
 set.seed(2022)
@@ -278,20 +248,15 @@ head(diamonds_test_imp)
 Alternatively, the *maxiter* parameter can be set to a lower number (the default is 10) or other *ranger* parameters can be adapted.
 Note that not all parameters to ranger function are supported. Parameters that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic parameters that can be applied to all variables are supported (like: *num.trees, mtry, min.node.size, max.depth, replace,* ...), as well as *class.weights* for factor variables.
 
-## Perform imputation in descending order 
-
-TODO: test if it's worth it
-
 ## Custom initialization
 
 The parameter *initialization* supports three values: *mean/mode*, *median/mode* and *custom*. The default is median/mode, which will initialize each variable with the median (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable. 
 
 When *custom* is used, a complete dataframe is expected in *x_init*. For example, the imputations of another imputation method can be used as initialization. When *custom* is used in *missForest* function, an initialization dataframe has to be passed to the *missForestPredict* function later on too. 
 
-We will exemplify this with an initialization via linear models on the *iris* dataset. Let's assume that variables Petal.Width and Species are known to be never missing. We will regress the other variables on these two variables and save the linear models to be applied on the test set afterwards.
+We will exemplify this with an initialization via linear models on the *iris* dataset. Let's assume that variables *Petal.Width* and *Species* are known to be never missing. We will regress the other variables on these two variables and save the linear models to be applied on the test set afterwards.
 
 ```{r}
-
 data(iris)
 
 # split train / test
@@ -350,5 +315,13 @@ evaluate_imputation_error(iris_test_init, iris_test_miss, iris_test)
 ```
 
 Note that we chose to set the *OOB_weights* parameter so that the errors of the last 2 variables are not taken into account when calculating the convergence criteria. 
+
+# Final words
+
+The R package *missForestPredict* implements the *missForest* algorithm [@stekhoven2012missforest] with additional functionality for prediction settings. The package is based on the *missForest* package with additional functionality for convergence criteria, initialization and imputation of new observations.
+
+Other imputation packages based on random forests are available in the R ecosystem, using iterative algorithms, like *missRanger* [@mayer2019package], *mice* [@van2007mice], *CALIBERrfimpute* [@shah2021package], *miceRanger* [@wilson2020miceranger]. These provide various extended functionality, but they do not support the imputation of new observations. Non-iterative algorithms are also available: the function *rfImpute* in the *randomForest* [@randomForestPackage] package requires presence of the outcome at imputation time, which makes it inadequate for prediction settings; *caret* [@kuhn2008caret] implements bagged trees without iterations and will impute new observations for most missingness patterns; *imputeMissings* implements random forests non-iteratively but will require a test set for initialization.
+
+The R package *missForestPredict* uses an iterative algorithm and can impute a single new observation in (applied) prediction settings, even when the new observation exhibits a missingness pattern not encountered in the training set. It is therefore suitable for (applied) prediction settings.
 
 # References 
