@@ -9,9 +9,10 @@
 #' Considering that imputation models are built for all variables, even if no missing values are encountered, it can considered to adjust the
 #' weights to 0 for those variables that are expected to never be missing. Alternatively the weights can be adjusted
 #' according to the (expected) proportion of missingness on each variable.
-#' @param decreasing (boolean) if TRUE the columns are sorted with decreasing amount of missing values
+#' @param decreasing (boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values
+#' (the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.
 #' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom
-#' @param x_init if initialization = custom; a complete dataframe to be used as initialization
+#' @param x_init if initialization = custom; a complete dataframe to be used as initialization (see vignette for example)
 #' @param verbose (boolean) if TRUE then missForest returns error estimates and runtime
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)
 #'
