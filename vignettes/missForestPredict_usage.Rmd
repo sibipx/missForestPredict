@@ -276,7 +276,7 @@ head(diamonds_test_imp)
 ```
 
 Alternatively, the *maxiter* parameter can be set to a lower number (the default is 10) or other *ranger* parameters can be adapted.
-Note that not all parameters to ranger function are supported. Parameters that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic parameters that can be applied to all variables are supported (like: *num.trees, mtry, min.node.size, max.depth, replace,* ...)
+Note that not all parameters to ranger function are supported. Parameters that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic parameters that can be applied to all variables are supported (like: *num.trees, mtry, min.node.size, max.depth, replace,* ...), as well as *class.weights* for factor variables.
 
 ## Perform imputation in descending order 
 

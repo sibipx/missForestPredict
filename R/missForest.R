@@ -13,6 +13,9 @@
 #' (the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.
 #' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom
 #' @param x_init if initialization = custom; a complete dataframe to be used as initialization (see vignette for example)
+#' @param class.weights a list of size \code{ncol(x)} containing class.weights parameter to be passed to ranger.
+#' The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
+#' will be used as arguments for ranger.
 #' @param verbose (boolean) if TRUE then missForest returns error estimates and runtime
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)
 #'
@@ -40,10 +43,11 @@ missForest <- function(xmis,
                        force = FALSE,
                        initialization = "median/mode",
                        x_init = NULL,
+                       class.weights = NULL,
                        verbose = TRUE,
                        ...){
 
-  unsupported_args <- c("case.weights", "class.weights", "splitrule", "num.random.splits",
+  unsupported_args <- c("case.weights", "splitrule", "num.random.splits",
                         "alpha", "minprop", "split.select.weights", "always.split.variables",
                         "inbag", "holdout", "quantreg", "oob.error", "dependent.variable.name",
                         "status.variable.name", "classification")
@@ -72,17 +76,33 @@ missForest <- function(xmis,
   if (any(apply(is.na(xmis), 2, sum) == nrow(xmis)))
     stop("There are variables completely missing in the input data. Remove these before imputation")
 
+  # check variable types
   p <- ncol(xmis)
   col_names <- colnames(xmis)
   if(is.null(OOB_weights)) OOB_weights <- rep(1, p)
 
-  # check variable types
   column_class <- function(x) ifelse(is.numeric(x), "numeric",
                                      ifelse(is.factor(x) | is.character(x), "factor", NA_character_))
 
-  varType <- unlist(lapply(xmis, column_class))
+  var_type <- unlist(lapply(xmis, column_class))
 
-  if (any(is.na(varType))) stop("Only numeric or factor columns are supported. Logical or other types are not supported.")
+  if (any(is.na(var_type))) stop("Only numeric or factor columns are supported. Logical or other types are not supported.")
+
+  # check class.weights for factor variables
+  if(!is.null(class.weights)){
+    if (!is.list(class.weights) | length(class.weights) != p)
+      stop(sprintf("class.weights needs to be a list of same length as the number of columns (%s)", p))
+
+    names(class.weights) <- col_names
+
+    for (c in col_names) {
+      if (var_type[c] == "factor"){
+        if (length(class.weights[[c]]) != length(unique(xmis[!is.na(xmis[,c, drop = TRUE]), c, drop = TRUE])))
+          stop(sprintf("class.weights for variable %s needs to be a vector of size %s (the number of classes in the variable), not %s",
+                       c, length(unique(xmis[, c, drop = TRUE])), length(class.weights[[c]])))
+      }
+    }
+  }
 
   # perform initialization (mean/mode imputation)
   if (initialization == "custom") {
@@ -102,7 +122,7 @@ missForest <- function(xmis,
     names(var_init) <- col_names
 
     for (col in col_names) {
-      if (varType[[col]] == "numeric") {
+      if (var_type[[col]] == "numeric") {
         # keep mean or median
         if (initialization == "mean/mode"){
           mean_col <- mean(xmis[, col, drop = TRUE], na.rm = TRUE)
@@ -165,7 +185,7 @@ missForest <- function(xmis,
       obsX <- ximp[obsi, names(ximp)!=col]
       misX <- ximp[misi, names(ximp)!=col]
 
-      if (varType[col] == "numeric") {
+      if (var_type[col] == "numeric") {
 
         RF <- ranger(x = obsX, y = obsY, ...)
 
@@ -192,7 +212,10 @@ missForest <- function(xmis,
           misY <- factor(rep(names(summarY), sum(misi)))
         } else {
 
-          RF <- ranger(x = obsX, y = obsY, probability = TRUE, ...)
+          RF <- ranger(x = obsX, y = obsY,
+                       probability = TRUE,
+                       class.weights = class.weights[[col]],
+                       ...)
 
           # save model
           models[[iter]][[col]] <- RF
