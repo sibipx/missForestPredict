@@ -10,23 +10,21 @@ Changes done (for my record):
 
 - use ranger iso randomForest
 
-- save initialization
-
-- support for custom initialization
+- save initialization & support for custom initialization
 
 - build models for non-missing variables
 
 - save models
 
-- predict
+- impute (predict) new observation(s)
 
-- changed convergence criteria: OOB iso apparent performance
+- convergence criteria: OOB iso apparent performance
 
-- changed convergence criteria: NMSE for both continuous and categorical variables (multiclass included)
+- convergence criteria: NMSE for both continuous and categorical variables (multiclass included)
 
-- convergence criteria: custom weighting of the errors for each varible
+- convergence criteria: custom weighting of the errors for each variable
 
-- better error monitoring (partially TODO)
+- better error monitoring 
 
 ## For the future...
 
