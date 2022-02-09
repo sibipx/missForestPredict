@@ -2,7 +2,7 @@
 title: "missForestPredict convergence criteria and error monitoring"
 author: "Elena Albu"
 date: "`r Sys.Date()`"
-output: rmarkdown::pdf_document
+output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{missForestPredict convergence criteria and error monitoring}
   %\VignetteEngine{knitr::rmarkdown}

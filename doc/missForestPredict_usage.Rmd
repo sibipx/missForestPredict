@@ -2,7 +2,7 @@
 title: "Using the missForestPredict package"
 author: "Elena Albu"
 date: "`r Sys.Date()`"
-output: rmarkdown::pdf_document
+output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Using the missForestPredict package}
   %\VignetteEngine{knitr::rmarkdown}
