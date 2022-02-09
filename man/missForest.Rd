@@ -12,6 +12,7 @@ missForest(
   force = FALSE,
   initialization = "median/mode",
   x_init = NULL,
+  class.weights = NULL,
   verbose = TRUE,
   ...
 )
@@ -26,11 +27,16 @@ Considering that imputation models are built for all variables, even if no missi
 weights to 0 for those variables that are expected to never be missing. Alternatively the weights can be adjusted
 according to the (expected) proportion of missingness on each variable.}
 
-\item{decreasing}{(boolean) if TRUE the columns are sorted with decreasing amount of missing values}
+\item{decreasing}{(boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values
+(the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.}
 
 \item{initialization}{initialization method before running RF models; supported: mean/mode, median/mode and custom}
 
-\item{x_init}{if initialization = custom; a complete dataframe to be used as initialization}
+\item{x_init}{if initialization = custom; a complete dataframe to be used as initialization (see vignette for example)}
+
+\item{class.weights}{a list of size \code{ncol(x)} containing class.weights parameter to be passed to ranger.
+The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
+will be used as arguments for ranger.}
 
 \item{verbose}{(boolean) if TRUE then missForest returns error estimates and runtime}
 
@@ -39,11 +45,13 @@ according to the (expected) proportion of missingness on each variable.}
 \value{
 Object of class \code{missForest} with elements
     \item{\code{ximp}}{dataframe with imputed values}
-    \item{\code{OOBerror}}{TODO! this and corrected!}
-    \item{\code{init}}{NULL if custome initalization is used; otherwise list of mean/mode or median/mode for each variable;}
-    \item{\code{models}}{list of random forest models for each iteration}
+    \item{\code{init}}{x_init if custom initalization is used; otherwise list of mean/mode or median/mode for each variable}
+    \item{\code{initialization}}{value of initialization parameter}
     \item{\code{impute_sequence}}{vector variable names in the order in which imputation has been run}
     \item{\code{maxiter}}{maxiter parameter as passed to the function}
+    \item{\code{models}}{list of random forest models for each iteration}
+    \item{\code{err_MSE}}{dataframe with MSE values for each iteration and each variable}
+    \item{\code{err_NMSE}}{dataframe with NMSE values for each iteration and each variable}
 }
 \description{
 Imputes a dataframe and returns imputation models to be used on new observations.

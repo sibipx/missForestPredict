@@ -45,7 +45,7 @@ The models are applied iteratively to "predict" the missing values of each varia
 
 At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the *OOB_weights* parameter. By default all variables weight equally in the convergence criteria. 
 
-The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score) [@brier1950verification].
+The normalized mean squared error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score) [@brier1950verification].
 
 More information on convergence criteria and error monitoring is provided in a separate vignette,
 
@@ -144,7 +144,7 @@ head(iris_test_imp)
 
 ## Imputation of a single new observation
 
-*missForestPredict* can impute a new observation with missing values. 
+*missForestPredict* can impute a new observation with missing values. The new observation has to be provided as a dataframe with one row and with named columns (the column names have to correspond to the column names of the training set). 
 
 ```{r}
 single_observation <- iris_test_miss[1,]
@@ -198,7 +198,7 @@ iris_train_imp_2 <-  missForestPredict::missForestPredict(iris_train_imp_object,
 identical(iris_train_imp, iris_train_imp_2)
 ```
 
-## Impute larger datasets by adapting *num.trees* or *max.iter*
+## Impute larger datasets by adapting *num.trees*
 
 Although *missForestPredict* benefits of the improved computation time of *ranger* package, larger dataset can still prove time consuming to impute.
 

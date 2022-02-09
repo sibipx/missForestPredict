@@ -4,7 +4,7 @@
 \alias{evaluate_imputation_error}
 \title{Evaluate the imputation error when true values are known.}
 \usage{
-evaluate_imputation_error(ximp, xmis, xtrue)
+evaluate_imputation_error(ximp, xmis, xtrue, all = FALSE)
 }
 \arguments{
 \item{ximp}{imputed dataframe}
@@ -12,6 +12,8 @@ evaluate_imputation_error(ximp, xmis, xtrue)
 \item{xmis}{original dataframe with missing values}
 
 \item{xtrue}{true dataframe with no missing values}
+
+\item{all}{calculate error on all observations (TRUE) or only on missing observations (FALSE). Default is FALSE}
 }
 \value{
 dataframe with variables in rows and performance measures in columns

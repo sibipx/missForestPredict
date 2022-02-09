@@ -78,6 +78,9 @@ Post imputation, the error can be checked using the *evaluate_imputation_error* 
 The MSE and NMSE errors are returned at the end of the imputation as part of the return object.
 
 ```{r}
+#library(devtools)
+#devtools::install_git('https://gitlab.kuleuven.be/u0143313/missforestpredict/', dependencies = TRUE)
+
 library(missForestPredict)
 
 data(iris)
