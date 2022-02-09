@@ -5,15 +5,14 @@
 #'
 #' @param xmis dataframe containing missing values
 #' @param maxiter maximum number of iterations
-#' @param OOB_weights vector of weights for each variable in the convergence criteria. By default all variables weight equally.
-#' Considering that imputation models are built for all variables, even if no missing values are encountered, it can considered to adjust the
-#' weights to 0 for those variables that are expected to never be missing. Alternatively the weights can be adjusted
-#' according to the (expected) proportion of missingness on each variable.
+#' @param OOB_weights vector of weights for each variable in the convergence criteria.
+#' By default the weights are set to the proportion of missing values on each variable.
 #' @param decreasing (boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values
 #' (the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.
+#' @param force TODO: this is used by me for comparison tests; will be removed at the end
 #' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom
-#' @param x_init if initialization = custom; a complete dataframe to be used as initialization (see vignette for example)
-#' @param class.weights a list of size \code{ncol(x)} containing class.weights parameter to be passed to ranger.
+#' @param x_init if \code{initialization = custom}; a complete dataframe to be used as initialization (see vignette for example)
+#' @param class.weights a list of size \code{ncol(xmis)} containing \code{class.weights} parameter to be passed to ranger.
 #' The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
 #' will be used as arguments for ranger.
 #' @param verbose (boolean) if TRUE then missForest returns error estimates and runtime
@@ -26,8 +25,8 @@
 #'     \item{\code{impute_sequence}}{vector variable names in the order in which imputation has been run}
 #'     \item{\code{maxiter}}{maxiter parameter as passed to the function}
 #'     \item{\code{models}}{list of random forest models for each iteration}
-#'     \item{\code{err_MSE}}{dataframe with MSE values for each iteration and each variable}
-#'     \item{\code{err_NMSE}}{dataframe with NMSE values for each iteration and each variable}
+#'     \item{\code{err_MSE}}{dataframe with MSE (mean square error) values for each iteration and each variable}
+#'     \item{\code{err_NMSE}}{dataframe with NMSE (normalized mean square error) values for each iteration and each variable}
 #'
 #' @examples
 #' data(iris)
@@ -79,7 +78,6 @@ missForest <- function(xmis,
   # check variable types
   p <- ncol(xmis)
   col_names <- colnames(xmis)
-  if(is.null(OOB_weights)) OOB_weights <- rep(1, p)
 
   column_class <- function(x) ifelse(is.numeric(x), "numeric",
                                      ifelse(is.factor(x) | is.character(x), "factor", NA_character_))
@@ -156,6 +154,14 @@ missForest <- function(xmis,
   noNAvar <- apply(NAloc, 2, sum) # how many are missing in the vars
   # imputation sequence, first the lowest missingness column if decreasing = FALSE
   impute_sequence <- names(sort(noNAvar, decreasing = decreasing))
+  # set weights proprtional to the misingness
+  if(is.null(OOB_weights)) {
+    if (sum(noNAvar) == 0){
+      OOB_weights <- rep(1, p)
+    } else {
+      OOB_weights <- noNAvar/nrow(xmis)
+    }
+  }
 
   # keep MSE and NMSE
   err_MSE <- data.frame(matrix(ncol = p, nrow = 0))

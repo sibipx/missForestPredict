@@ -2,7 +2,7 @@
 title: "Using the missForestPredict package"
 author: "Elena Albu"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 vignette: >
   %\VignetteIndexEntry{Using the missForestPredict package}
   %\VignetteEngine{knitr::rmarkdown}
@@ -21,21 +21,21 @@ knitr::opts_chunk$set(
 
 ## What is this document?
 
-The goal of this document is to highlight the functionality implemented in the package missForestPredict and to provide guidance for the usage of this package.
+The goal of this document is to highlight the functionality implemented in the package `missForestPredict` and to provide guidance for the usage of this package.
 
 ## Package information
 
-The package missForestPredict implements the missing data imputation algorithm used in the R package missForest [@stekhoven2012missforest] with adaptations for prediction settings. The function missForest is used to impute a (training) dataset with missing values and to learn imputations models that can be later used for imputing new observations. The function missForestPredict is used to impute one or multiple new observations (test set) using the models learned on the training data. The word "Predict" in the function name should not misguide the user. The function does not perform prediction of an outcome and is agnostic on whether the desired outcome for a prediction model is part of the training data or not; it will treat all columns of the provided data as variables.
+The package `missForestPredict` implements the missing data imputation algorithm used in the R package `missForest` [@stekhoven2012missforest] with adaptations for prediction settings. The function `missForest` is used to impute a (training) dataset with missing values and to learn imputations models that can be later used for imputing new observations. The function `missForestPredict` is used to impute one or multiple new observations (test set) using the models learned on the training data. The word "Predict" in the function name should not misguide the user. The function does not perform prediction of an outcome and is agnostic on whether the desired outcome for a prediction model is part of the training data or not; it will treat all columns of the provided data as variables to be imputed.
 
 ## Package functionality
 
 **Fast implementation**
 
-The imputation algorithm is based on random forests [@breiman01] as implemented in the ranger R package [@JSSv077i01]. Ranger provides a fast implementation of random forests suitable for large datasets as well as high dimensional data. 
+The imputation algorithm is based on random forests [@breiman01] as implemented in the `ranger` R package [@JSSv077i01]. Ranger provides a fast implementation of random forests suitable for large datasets as well as high dimensional data. 
 
 **Saved models and initialization**
 
-The missing data in each column is initialized the mean/mode (or median/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. 
+The missing data in each column is initialized the median/mode (or mean/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. 
 
 **Imputation of new observations**
 
@@ -43,53 +43,23 @@ The models are applied iteratively to "predict" the missing values of each varia
 
 **Convergence criteria**
 
-At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables are averaged (TODO: implement weighted average)
+At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the `OOB_weights` parameter. By default the weights are set to the proportion of missing values of each variable. 
 
-The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score).
+The normalized mean squared error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score) [@brier1950verification].
 
-Continuous variables (including ordinal factors:
-
-$NMSE = \frac{\sum_{i=1}^{N}(x_i - \hat{x_i})^2}{\sum_{i=1}^{N} (x_i - \bar{x})^2} = 1 - R^2$, $i = 1, 2, ... N$
-
-$\bar{x}$ = the mean value of variable x
-
-$\hat{x_i}$ = prediction (imputation) for observation i 
-
-$N$ = number of observations
-
-Categorical variables:
-
-$NMSE = \frac{BS}{BSref} = 1 - BSS$
-
-$BS =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{ij} - x_{ij})^2$, $i = 1, 2, ... N$, $j = 1, 2, ... R$
-
-$BSref =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{j} - x_{ij})^2=1-\sum_{j=1}^{R}p_j^2$
-
-$p_{ij}$ = prediction (probability) for observation i and class j
-
-$p_{j}$ = proportion of the event in class j
-
-$N$ = number of observations
-
-$R$ = number of classes
-
-The Brier Score ($BS$) is calculated as the sum of squared distances between the predictions (as probabilities) and the true values (0 or 1) for each class. The reference Brier Score ($BSref$) is calculated as the Brier Score of a predictor that predicts the proportion of the event in each class [@brier1950verification].
-
-**Imputation error monitoring**
-
-TODO - separate vignette
+More information on convergence criteria and error monitoring is provided in a separate vignette.
 
 **Extended options for binary variables**
 
-TODO. This might prove useful in imputation of sparse binary variables.
+TODO. (This might prove useful in imputation of sparse binary variables.)
 
 **Support for dataframe and tibble**
 
-Both dataframe (data.frame class) and tibble (tbl_df class) are supported as input for the package functions.
+Both dataframe (`data.frame` class) and tibble (`tbl_df` class) are supported as input for the package functions. Currently matrix input is not supported.
 
 ## How to install
 
-The R package missforestpredict is for the moment only available on the KU Leuven gitlab. Only KU Leuven gitlab users can install the package.
+The R package `missForestPredict` is for the moment only available on the KU Leuven gitlab. Only KU Leuven gitlab users can install the package.
 
 ```{r, eval=FALSE}
 library(devtools)
@@ -101,9 +71,9 @@ devtools::install_git('https://gitlab.kuleuven.be/u0143313/missforestpredict/', 
 
 ## Data used for demonstration
 
-**Iris data** The iris dataset contains in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers.
+**Iris data** The iris dataset contains in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers [@anderson1935irises].
 
-**Diamonds data** The diamonds dataset from ggplot2 R package contains seven continuous variables and three categorical variables for N = 53940 diamonds
+**Diamonds data** The diamonds dataset from `ggplot2` R package contains seven continuous variables and three categorical variables for N = 53940 diamonds [@ggplot2].
 
 ## Imputation of training and test set
 
@@ -133,23 +103,23 @@ We produce 10% random missing values on each column in both the training and the
 
 ```{r}
 set.seed(2022)
-iris_train_miss <- prodNA(iris_train, noNA = 0.1)
-iris_test_miss <- prodNA(iris_test, noNA = 0.1)
+iris_train_miss <- produce_NA(iris_train, proportion = 0.1)
+iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
 
 head(iris_train_miss)
 head(iris_test_miss)
 
 ```
 
-We will impute the training set and learn the random forest imputation models at the same time using the function *missForest*. Observe that we set *verbose = TRUE* to monitor the number of iterations and the errors. More information on error monitoring is provided in a separate vignette. (TODO)
+We will impute the training set and learn the random forest imputation models at the same time using the function `missForest`. By default feedback on the number of iterations and the error monitoring is provided. You can set `verbose = FALSE` to silence this output. More information on error monitoring is provided in a separate vignette.
 
 ```{r}
 set.seed(2022)
-iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, verbose = TRUE)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss)
 
 ```
 
-The imputed training set can be found by extracting ximp dataframe from the object.
+The imputed training set can be found by extracting `ximp` dataframe from the object.
 
 ```{r}
 iris_train_imp <- iris_train_imp_object$ximp
@@ -158,9 +128,9 @@ head(iris_train_imp)
 
 ```
 
-We will further impute the test set using the learned imputation models. The function *missForestPredict* will:
+We will further impute the test set using the learned imputation models. The function `missForestPredict` will:
 
-- initialize the missing values in each variable with the initialization "learned" from the training set (e.g: mean / mode)
+- initialize the missing values in each variable with the initialization "learned" from the training set (median/mode)
 
 - imperatively predict the missing values of each variable using the learned random forest models for each iteration
 
@@ -174,7 +144,7 @@ head(iris_test_imp)
 
 ## Imputation of a single new observation
 
-*missForestPredict* can impute a new observation with missing values. 
+`missForestPredict` can impute a new observation with missing values. The new observation has to be provided as a dataframe with one row and with named columns (the column names have to correspond to the column names of the training set). 
 
 ```{r}
 single_observation <- iris_test_miss[1,]
@@ -189,34 +159,18 @@ print(single_observation_imp)
 
 ```
 
-Imputation can be done even when all variables are missing for a single new observation. This is of course, not an ideal situation and probably not realistic, but it can be technically handled by the *missForestPredict* function. The observation will be initialized with the "mean observation" and the random forest models will impute iteratively. 
-
-*missForestPredict* package can impute observations with new missingness patterns not present in the training data as well as variables with no missingness (complete) in training data. The inialization and the random forest imputation models are "learned" for all variables in the dataset, regardless of the amount of missingness. The only condition is that the new observations follow the same data types as the ones in the training set. 
-
-```{r}
-single_observation <- iris_test_miss[2,]
-single_observation[,1:4] <- NA_real_
-
-print(single_observation)
-
-single_observation_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
-                                                               newdata = single_observation)
-
-print(single_observation_imp)
-
-```
-
+`missForestPredict` package can impute observations with new missingness patterns not present in the training data as well as variables with no missingness (complete) in training data. The initialization and the random forest imputation models are "learned" for all variables in the dataset, regardless of the amount of missingness.
 
 ## Predict without storing the imputed matrix
 
-The function *missForest* returns both the imputed training dataframe as well as the imputation models.
+The function `missForest` returns both the imputed training dataframe as well as the imputation models.
 
 ```{r}
 str(iris_train_imp_object, max.level = 1)
 
 ```
 
-The imputed training data is though not necessary for imputing the test set. To avoid storing further these data in the object, *ximp* can be set to NULL.
+The imputed training data is though not necessary for imputing the test set. To avoid storing further these data in the object, `ximp` can be set to NULL.
 
 ```{r}
 iris_train_imp <- iris_train_imp_object$ximp
@@ -228,9 +182,27 @@ iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object,
 head(iris_test_imp)
 ```
 
-## Impute larger datasets by adapting *num.trees* or *max.iter*
+In `ximp` is set to NULL by mistake, and the training set imputation is lost, it can be recovered without rerunning the algorithm. 
+Imputing the training set with the function `missForestPredict` will give the same results as the initial results of `missForest` function because the same models are applied to the variables in the same order and for the same number of iterations.
 
-Although *missForestPredict* benefits of the improved computation time of *ranger* package, larger dataset can still prove time consuming to impute.
+```{r}
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss)
+
+# store imputed dataframe
+iris_train_imp <- iris_train_imp_object$ximp
+iris_train_imp_object$ximp <- NULL 
+
+# re-impute the same dataframe using missForestPredict
+iris_train_imp_2 <-  missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_train_miss)
+
+identical(iris_train_imp, iris_train_imp_2)
+```
+
+## Impute larger datasets by adapting `num.trees`
+
+Although `missForestPredict` benefits of the improved computation time of `ranger` package, larger dataset can still prove time consuming to impute.
 
 We will load the diamonds dataset, which contains more than 50000 observations and produce 30% missing values on each variable.
 
@@ -239,8 +211,7 @@ library(ggplot2)
 
 data(diamonds)
 
-class(diamonds)
-
+# split train / test
 N <- nrow(diamonds)
 n_test <- floor(N/3)
 
@@ -250,20 +221,19 @@ id_test <- sample(1:N, n_test)
 diamonds_train <- diamonds[-id_test,]
 diamonds_test <- diamonds[id_test,]
 
-diamonds_train_miss <- prodNA(diamonds_train, noNA = 0.1)
-diamonds_test_miss <- prodNA(diamonds_test, noNA = 0.1)
+diamonds_train_miss <- produce_NA(diamonds_train, proportion = 0.1)
+diamonds_test_miss <- produce_NA(diamonds_test, proportion = 0.1)
 
 head(diamonds_train_miss)
 head(diamonds_test_miss)
 
 ```
 
-The function *missForest* supports additional arguments to be passed to the *ranger* function. By default, the default values of *ranger* are used. By default, the number of trees in the forest is 500. This can be overridden by passing *num.trees = 100*, for example. Using less trees will prove to be computationally more efficient.
+The function `missForest` supports additional parameters to be passed to the `ranger` function. By default, the default values of `ranger` are used (e.g. the number of trees in the forest is 500). This can be overridden by passing `num.trees = 100`. Using less trees will prove to be computationally more efficient.
 
 ```{r}
 set.seed(2022)
 diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss, 
-                                                           verbose = TRUE, 
                                                            num.trees = 100)
 
 # impute test set
@@ -275,36 +245,85 @@ head(diamonds_test_imp)
 
 ```
 
-Alternatively, the *maxiter* parameter can be set to a lower number (the default is 10).
-
-```{r}
-#set.seed(2022)
-#diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss, verbose = TRUE, maxiter = 2)
-#
-## impute test set
-#diamonds_train_imp_object$ximp <- NULL 
-#diamonds_test_imp <- missForestPredict::missForestPredict(diamonds_train_imp_object, newdata = diamonds_test_miss)
-#
-#head(diamonds_test_imp)
-
-```
-
-Note that not all arguments to ranger function are supported. Arguments that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic arguments that can be applied to all variables are supported (like: *num.trees, mtry, min.node.size, max.depth, replce,* ...)
-
-## Perform imputation in descending order 
-
-TODO: test if it's worth it
+Alternatively, the `maxiter` parameter can be set to a lower number (the default is 10) or other `ranger` parameters can be adapted.
+Note that not all parameters to ranger function are supported. Parameters that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic parameters that can be applied to all variables are supported (like: `num.trees, mtry, min.node.size, max.depth, replace,` ...), as well as `class.weights` for factor variables.
 
 ## Custom initialization
 
-The parameter *initialization* suppots three values: *mean/mode*, *median/mode* and *custom*. The default is median/mode, which will initialize each variable with the median (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable. 
+The parameter `initialization` supports three values: `mean/mode`, `median/mode` and `custom`. The default is median/mode, which will initialize each variable with the median (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable. 
 
-When *custom* is used, a complete dataframe is expected in *x_init*. For example, the imputations of another imputation method can be used as initialization. When *custom* is used in *missForest* function, an initialization dataframe has to be passed to the *missForestPredict* function later on too. 
+When `custom` is used, a complete dataframe is expected in `x_init`. For example, the imputations of another imputation method can be used as initialization. When `custom` is used in `missForest` function, an initialization dataframe has to be passed to the `missForestPredict` function later on too. 
 
-We will exemplify this with an initialization via linear models on the *diamonds* dataset.
+We will exemplify this with an initialization using linear models on the `iris` dataset. Let's assume that variables `Petal.Width` and `Species` are known to be never missing. We will regress the other variables on these two variables and save the linear models to be applied on the test set afterwards.
 
+```{r}
+data(iris)
 
+# split train / test
+N <- nrow(iris)
+n_test <- floor(N/3)
 
+set.seed(2022)
+id_test <- sample(1:N, n_test)
 
+iris_train <- iris[-id_test,]
+iris_test <- iris[id_test,]
+
+# produce missing values
+set.seed(2022)
+iris_train_miss <- produce_NA(iris_train, proportion = c(0.2, 0.2, 0.2, 0, 0))
+iris_test_miss <- produce_NA(iris_test, proportion = c(0.2, 0.2, 0.2, 0, 0))
+
+# build linear models for Sepal.Length, Sepal.Width, Petal.Length using complete cases for each variable
+fit_1 <- lm(Sepal.Length ~ ., data = iris_train_miss[!is.na(iris_train_miss$Sepal.Length), 
+                                                     c("Sepal.Length", "Petal.Width", "Species")])
+fit_2 <- lm(Sepal.Width ~ ., data = iris_train_miss[!is.na(iris_train_miss$Sepal.Width), 
+                                                    c("Sepal.Width", "Petal.Width", "Species")])
+fit_3 <- lm(Petal.Length ~ ., data = iris_train_miss[!is.na(iris_train_miss$Petal.Length), 
+                                                     c("Petal.Length", "Petal.Width", "Species")])
+
+# impute training with predictions of linear model
+iris_train_init <- iris_train_miss
+iris_train_init$Sepal.Length[is.na(iris_train_init$Sepal.Length)] <- 
+  predict(fit_1, iris_train_init[is.na(iris_train_init$Sepal.Length), c("Petal.Width", "Species")])
+iris_train_init$Sepal.Width[is.na(iris_train_init$Sepal.Width)] <- 
+  predict(fit_2, iris_train_init[is.na(iris_train_init$Sepal.Width), c("Petal.Width", "Species")])
+iris_train_init$Petal.Length[is.na(iris_train_init$Petal.Length)] <- 
+  predict(fit_3, iris_train_init[is.na(iris_train_init$Petal.Length), c("Petal.Width", "Species")])
+
+# impute the training set using this initialization
+set.seed(2022)
+iris_train_imp_obj <- missForest(iris_train_miss, 
+                                 OOB_weights = c(1,1,1,0,0),
+                                 initialization = "custom", 
+                                 x_init = iris_train_init)
+
+# build test set initialization using the linear models learned on training
+iris_test_init <- iris_test_miss
+iris_test_init$Sepal.Length[is.na(iris_test_init$Sepal.Length)] <- 
+  predict(fit_1, iris_test_init[is.na(iris_test_init$Sepal.Length), c("Petal.Width", "Species")])
+iris_test_init$Sepal.Width[is.na(iris_test_init$Sepal.Width)] <- 
+  predict(fit_2, iris_test_init[is.na(iris_test_init$Sepal.Width), c("Petal.Width", "Species")])
+iris_test_init$Petal.Length[is.na(iris_test_init$Petal.Length)] <- 
+  predict(fit_3, iris_test_init[is.na(iris_test_init$Petal.Length), c("Petal.Width", "Species")])
+
+# impute test set
+iris_test_imp <- missForestPredict(iris_train_imp_obj, newdata = iris_test_miss, 
+                                   x_init = iris_test_init)
+
+evaluate_imputation_error(iris_test_imp, iris_test_miss, iris_test)
+evaluate_imputation_error(iris_test_init, iris_test_miss, iris_test)
+
+```
+
+Note that we chose to set the `OOB_weights` parameter so that the errors of the last 2 variables are not taken into account when calculating the convergence criteria. 
+
+# Final words
+
+The package `missForestPredict` is based on the `missForest` package [@stekhoven2012missforest] with additional functionality for convergence criteria, initialization and imputation of new observations.
+
+Other imputation packages based on random forests are available in the R ecosystem, using iterative algorithms, like `missRanger` [@mayer2019package], `mice` [@van2007mice], `CALIBERrfimpute` [@shah2021package], `miceRanger` [@wilson2020miceranger]. These provide various extended functionality, but they do not support the imputation of new observations. Non-iterative algorithms are also available: the function `rfImpute` in the `randomForest` [@randomForestPackage] package requires presence of the outcome at imputation time, which makes it inadequate for prediction settings; `caret` [@kuhn2008caret] implements bagged trees without iterations and will impute new observations for most missingness patterns; `imputeMissings` implements random forests non-iteratively but will require a test set for initialization.
+
+The R package `missForestPredict` uses an iterative algorithm and can impute a single new observation in (applied) prediction settings, even when the new observation exhibits a missingness pattern not encountered in the training set. It is therefore suitable for (applied) prediction settings.
 
 # References 

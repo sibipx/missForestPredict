@@ -12,7 +12,7 @@
 
 <meta name="author" content="Elena Albu" />
 
-<meta name="date" content="2022-02-03" />
+<meta name="date" content="2022-02-09" />
 
 <title>Using the missForestPredict package</title>
 
@@ -163,7 +163,7 @@ div.csl-indent {
 
 <h1 class="title toc-ignore">Using the missForestPredict package</h1>
 <h4 class="author">Elena Albu</h4>
-<h4 class="date">2022-02-03</h4>
+<h4 class="date">2022-02-09</h4>
 
 
 
@@ -171,63 +171,47 @@ div.csl-indent {
 <h1>Introduction</h1>
 <div id="what-is-this-document" class="section level2">
 <h2>What is this document?</h2>
-<p>The goal of this document is to highlight the functionality implemented in the package missForestPredict and to provide guidance for the usage of this package.</p>
+<p>The goal of this document is to highlight the functionality implemented in the package <code>missForestPredict</code> and to provide guidance for the usage of this package.</p>
 </div>
 <div id="package-information" class="section level2">
 <h2>Package information</h2>
-<p>The package missForestPredict implements the missing data imputation algorithm used in the R package missForest <span class="citation">(Stekhoven and Bühlmann 2012)</span> with adaptations for prediction settings. The function missForest is used to impute a (training) dataset with missing values and to learn imputations models that can be later used for imputing new observations. The function missForestPredict is used to impute one or multiple new observations (test set) using the models learned on the training data. The word “Predict” in the function name should not misguide the user. The function does not perform prediction of an outcome and is agnostic on whether the desired outcome for a prediction model is part of the training data or not; it will treat all columns of the provided data as variables.</p>
+<p>The package <code>missForestPredict</code> implements the missing data imputation algorithm used in the R package <code>missForest</code> <span class="citation">(Stekhoven and Bühlmann 2012)</span> with adaptations for prediction settings. The function <code>missForest</code> is used to impute a (training) dataset with missing values and to learn imputations models that can be later used for imputing new observations. The function <code>missForestPredict</code> is used to impute one or multiple new observations (test set) using the models learned on the training data. The word “Predict” in the function name should not misguide the user. The function does not perform prediction of an outcome and is agnostic on whether the desired outcome for a prediction model is part of the training data or not; it will treat all columns of the provided data as variables to be imputed.</p>
 </div>
 <div id="package-functionality" class="section level2">
 <h2>Package functionality</h2>
 <p><strong>Fast implementation</strong></p>
-<p>The imputation algorithm is based on random forests <span class="citation">(Breiman 2001)</span> as implemented in the ranger R package <span class="citation">(Wright and Ziegler 2017)</span>. Ranger provides a fast implementation of random forests suitable for large datasets as well as high dimensional data.</p>
+<p>The imputation algorithm is based on random forests <span class="citation">(Breiman 2001)</span> as implemented in the <code>ranger</code> R package <span class="citation">(Wright and Ziegler 2017)</span>. Ranger provides a fast implementation of random forests suitable for large datasets as well as high dimensional data.</p>
 <p><strong>Saved models and initialization</strong></p>
-<p>The missing data in each column is initialized the mean/mode (or median/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest <span class="citation">(Stekhoven and Bühlmann 2012)</span> until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations.</p>
+<p>The missing data in each column is initialized the median/mode (or mean/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest <span class="citation">(Stekhoven and Bühlmann 2012)</span> until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for a variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations.</p>
 <p><strong>Imputation of new observations</strong></p>
 <p>The models are applied iteratively to “predict” the missing values of each variable for the new observation, using the same number of iterations as used in the training data. Imputation initialization and models are “learned” also for variables with no missing values in the original (training) data. This allows for unfortunate situations in which new observations have different missing patterns than the one encountered in the training data (for example, because of accidental registration errors or because of unfortunate train / test split in which all missing values of a variable with low missingness fall in the test set).</p>
 <p><strong>Convergence criteria</strong></p>
-<p>At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables are averaged (TODO: implement weighted average)</p>
-<p>The normalized mean square error is used for both continuous and categorical variables. For continuous variables, it is equivalent to <span class="math inline">\(1 - R^2\)</span>. For categorical variables, it is equivalent to <span class="math inline">\(1 - BSS\)</span> (Brier Skill Score).</p>
-<p>Continuous variables (including ordinal factors:</p>
-<p><span class="math inline">\(NMSE = \frac{\sum_{i=1}^{N}(x_i - \hat{x_i})^2}{\sum_{i=1}^{N} (x_i - \bar{x})^2} = 1 - R^2\)</span>, <span class="math inline">\(i = 1, 2, ... N\)</span></p>
-<p><span class="math inline">\(\bar{x}\)</span> = the mean value of variable x</p>
-<p><span class="math inline">\(\hat{x_i}\)</span> = prediction (imputation) for observation i</p>
-<p><span class="math inline">\(N\)</span> = number of observations</p>
-<p>Categorical variables:</p>
-<p><span class="math inline">\(NMSE = \frac{BS}{BSref} = 1 - BSS\)</span></p>
-<p><span class="math inline">\(BS =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{ij} - x_{ij})^2\)</span>, <span class="math inline">\(i = 1, 2, ... N\)</span>, <span class="math inline">\(j = 1, 2, ... R\)</span></p>
-<p><span class="math inline">\(BSref =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{j} - x_{ij})^2=1-\sum_{j=1}^{R}p_j^2\)</span></p>
-<p><span class="math inline">\(p_{ij}\)</span> = prediction (probability) for observation i and class j</p>
-<p><span class="math inline">\(p_{j}\)</span> = proportion of the event in class j</p>
-<p><span class="math inline">\(N\)</span> = number of observations</p>
-<p><span class="math inline">\(R\)</span> = number of classes</p>
-<p>The Brier Score (<span class="math inline">\(BS\)</span>) is calculated as the sum of squared distances between the predictions (as probabilities) and the true values (0 or 1) for each class. The reference Brier Score (<span class="math inline">\(BSref\)</span>) is calculated as the Brier Score of a predictor that predicts the proportion of the event in each class <span class="citation">(Brier and others 1950)</span>.</p>
-<p><strong>Imputation error monitoring</strong></p>
-<p>TODO - separate vignette</p>
+<p>At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the <code>OOB_weights</code> parameter. By default the weights are set to the proportion of missing values of each variable.</p>
+<p>The normalized mean squared error is used for both continuous and categorical variables. For continuous variables, it is equivalent to <span class="math inline">\(1 - R^2\)</span>. For categorical variables, it is equivalent to <span class="math inline">\(1 - BSS\)</span> (Brier Skill Score) <span class="citation">(Brier and others 1950)</span>.</p>
+<p>More information on convergence criteria and error monitoring is provided in a separate vignette.</p>
 <p><strong>Extended options for binary variables</strong></p>
-<p>TODO. This might prove useful in imputation of sparse binary variables.</p>
+<p>TODO. (This might prove useful in imputation of sparse binary variables.)</p>
 <p><strong>Support for dataframe and tibble</strong></p>
-<p>Both dataframe (data.frame class) and tibble (tbl_df class) are supported as input for the package functions.</p>
+<p>Both dataframe (<code>data.frame</code> class) and tibble (<code>tbl_df</code> class) are supported as input for the package functions. Currently matrix input is not supported.</p>
 </div>
 <div id="how-to-install" class="section level2">
 <h2>How to install</h2>
-<p>The R package missforestpredict is for the moment only available on the KU Leuven gitlab. Only KU Leuven gitlab users can install the package.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(devtools)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_git</span>(<span class="st">&#39;https://gitlab.kuleuven.be/u0143313/missforestpredict/&#39;</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p>The R package <code>missForestPredict</code> is for the moment only available on the KU Leuven gitlab. Only KU Leuven gitlab users can install the package.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#library(devtools)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#devtools::install_git(&#39;https://gitlab.kuleuven.be/u0143313/missforestpredict/&#39;, dependencies = TRUE)</span></span></code></pre></div>
 </div>
 </div>
 <div id="how-to-use-the-package" class="section level1">
 <h1>How to use the package</h1>
 <div id="data-used-for-demonstration" class="section level2">
 <h2>Data used for demonstration</h2>
-<p><strong>Iris data</strong> The iris dataset contains in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers.</p>
-<p><strong>Diamonds data</strong> The diamonds dataset from ggplot2 R package contains seven continuous variables and three categorical variables for N = 53940 diamonds</p>
+<p><strong>Iris data</strong> The iris dataset contains in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers <span class="citation">(Anderson 1935)</span>.</p>
+<p><strong>Diamonds data</strong> The diamonds dataset from <code>ggplot2</code> R package contains seven continuous variables and three categorical variables for N = 53940 diamonds <span class="citation">(Wickham 2016)</span>.</p>
 </div>
 <div id="imputation-of-training-and-test-set" class="section level2">
 <h2>Imputation of training and test set</h2>
 <p>After installing the package you can load it in your R sessions with:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(missForestPredict)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Loading required package: ranger</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(missForestPredict)</span></code></pre></div>
 <p>We will load the iris dataset and split it in a training set (100 observations) and a test set (50 observations).</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(iris)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -241,69 +225,71 @@ div.csl-indent {
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>iris_test <span class="ot">&lt;-</span> iris[id_test,]</span></code></pre></div>
 <p>We produce 10% random missing values on each column in both the training and the test set.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>iris_train_miss <span class="ot">&lt;-</span> <span class="fu">prodNA</span>(iris_train, <span class="at">noNA =</span> <span class="fl">0.1</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>iris_test_miss <span class="ot">&lt;-</span> <span class="fu">prodNA</span>(iris_test, <span class="at">noNA =</span> <span class="fl">0.1</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>iris_train_miss <span class="ot">&lt;-</span> <span class="fu">produce_NA</span>(iris_train, <span class="at">proportion =</span> <span class="fl">0.1</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>iris_test_miss <span class="ot">&lt;-</span> <span class="fu">produce_NA</span>(iris_test, <span class="at">proportion =</span> <span class="fl">0.1</span>)</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(iris_train_miss)</span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    Sepal.Length Sepal.Width Petal.Length Petal.Width Species</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2            NA         3.0          1.4         0.2  setosa</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2           4.9          NA          1.4         0.2    &lt;NA&gt;</span></span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4           4.6         3.1          1.5         0.2  setosa</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5            NA         3.6          1.4         0.2  setosa</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5           5.0         3.6          1.4          NA    &lt;NA&gt;</span></span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8           5.0         3.4          1.5         0.2  setosa</span></span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9           4.4         2.9          1.4         0.2  setosa</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 10          4.9         3.1           NA         0.1  setosa</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 10           NA         3.1          1.5         0.1  setosa</span></span>
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(iris_test_miss)</span>
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     Sepal.Length Sepal.Width Petal.Length Petal.Width    Species</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55            NA         2.8          4.6         1.5 versicolor</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 75           6.4         2.9          4.3         1.3       &lt;NA&gt;</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6             NA         3.9          1.7         0.4     setosa</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55           6.5         2.8          4.6         1.5 versicolor</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 75           6.4         2.9           NA         1.3 versicolor</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6            5.4         3.9          1.7         0.4     setosa</span></span>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 123          7.7         2.8          6.7         2.0  virginica</span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 14           4.3         3.0           NA         0.1     setosa</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7            4.6          NA          1.4         0.3     setosa</span></span></code></pre></div>
-<p>We will impute the training set and learn the random forest imputation models at the same time using the function <em>missForest</em>. Observe that we set <em>verbose = TRUE</em> to monitor the number of iterations and the errors. More information on error monitoring is provided in a separate vignette. (TODO)</p>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 14           4.3          NA          1.1          NA     setosa</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7            4.6         3.4          1.4         0.3       &lt;NA&gt;</span></span></code></pre></div>
+<p>We will impute the training set and learn the random forest imputation models at the same time using the function <code>missForest</code>. By default feedback on the number of iterations and the error monitoring is provided. You can set <code>verbose = FALSE</code> to silence this output. More information on error monitoring is provided in a separate vignette.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>iris_train_imp_object <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForest</span>(iris_train_miss, <span class="at">verbose =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>iris_train_imp_object <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForest</span>(iris_train_miss)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 1 in progress...done!</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:   0.175486629092374, 0.10574091285006, 0.0975558880964864, 0.0691215428324836, 0.030583603809247</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:  0.253144120897475, 0.571125421898017, 0.0311490063879862, 0.118355368787017, 0.138205499250422</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     differences:      0.746855879102525, 0.428874578101983, 0.968850993612014, 0.881644631212983, 0.861794500749578</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     difference total: 3.88802058277908</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:             0.0599999999999987 seconds</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 2 in progress...done!</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:   0.121624716806977, 0.100909963854223, 0.0754230101878345, 0.0373394243432059, 0.0302588459182152</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:  0.175446882618616, 0.545032609673787, 0.0240821120281168, 0.0639355135510401, 0.136737937522069</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     differences:      0.0776972382788585, 0.0260928122242297, 0.00706689435986947, 0.0544198552359768, 0.00146756172835336</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     difference total: 0.166744361827288</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:             0.0800000000000001 seconds</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 3 in progress...done!</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:   0.119374320504619, 0.0957540810226516, 0.0687858530754518, 0.0359807238328611, 0.0310225664260242</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:  0.172200626213911, 0.517184772180524, 0.0219629078127115, 0.0616090391498149, 0.140189145389129</span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     differences:      0.00324625640470547, 0.0278478374932627, 0.00211920421540526, 0.00232647440122523, -0.00345120786706055</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     difference total: 0.0320885646475381</span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:             0.0600000000000005 seconds</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 4 in progress...done!</span></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:   0.115347139453303, 0.0968910236906472, 0.0723186461801594, 0.0361206416077814, 0.031373609491355</span></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:  0.166391310642673, 0.52332560115042, 0.0230909073331211, 0.061848617422694, 0.141775488267655</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     differences:      0.00580931557123737, -0.00614082896989576, -0.00112799952040963, -0.000239578272879189, -0.0015863428785251</span></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     difference total: -0.00328543407047233</span></span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:             0.0600000000000005 seconds</span></span></code></pre></div>
-<p>The imputed training set can be found by extracting ximp dataframe from the object.</p>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.184386757911946, 0.125508832271481, 0.190885886904061, 0.0474293958235265, 0.0303297414544425</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.265052345259937, 0.671430214917994, 0.0632865445207545, 0.0789602736306372, 0.136686334818797</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.756916857370376</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0699999999999998 seconds</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 2 in progress...done!</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.144011391454906, 0.104539650777098, 0.0875392899227555, 0.0432084946819917, 0.0268840237120604</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.207013548486481, 0.559252117308309, 0.0290228851323939, 0.0719333338327209, 0.121157599444189</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.0454072457888052</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0800000000000001 seconds</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 3 in progress...done!</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.14405950262543, 0.101993081556839, 0.0846137888551251, 0.0437997243776689, 0.0295599078826014</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.207082707349759, 0.545628824923885, 0.028052960867353, 0.0729176107297518, 0.133216943907124</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.000296087285244218</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0599999999999996 seconds</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 4 in progress...done!</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.142166307243506, 0.102869771851575, 0.0836663522458388, 0.0427183395089805, 0.0259652357261172</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.20436127614886, 0.550318824363425, 0.0277388465547305, 0.0711173254077677, 0.117016919166292</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.00326917122735934</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0700000000000003 seconds</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 5 in progress...done!</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.137293319624421, 0.101606569777187, 0.089526189540059, 0.0425420845798221, 0.0288293492939068</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.197356452095942, 0.543561116360402, 0.02968162430441, 0.0708238968874704, 0.129924552641309</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: -0.000158890129691391</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0600000000000005 seconds</span></span></code></pre></div>
+<p>The imputed training set can be found by extracting <code>ximp</code> dataframe from the object.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>iris_train_imp <span class="ot">&lt;-</span> iris_train_imp_object<span class="sc">$</span>ximp</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(iris_train_imp)</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    Sepal.Length Sepal.Width Petal.Length Petal.Width Species</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2      4.691516         3.0     1.400000         0.2  setosa</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4      4.600000         3.1     1.500000         0.2  setosa</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5      5.082323         3.6     1.400000         0.2  setosa</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8      5.000000         3.4     1.500000         0.2  setosa</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9      4.400000         2.9     1.400000         0.2  setosa</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 10     4.900000         3.1     1.435862         0.1  setosa</span></span></code></pre></div>
-<p>We will further impute the test set using the learned imputation models. The function <em>missForestPredict</em> will:</p>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2      4.900000    3.311402          1.4   0.2000000  setosa</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4      4.600000    3.100000          1.5   0.2000000  setosa</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5      5.000000    3.600000          1.4   0.2612063  setosa</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8      5.000000    3.400000          1.5   0.2000000  setosa</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9      4.400000    2.900000          1.4   0.2000000  setosa</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 10     4.786647    3.100000          1.5   0.1000000  setosa</span></span></code></pre></div>
+<p>We will further impute the test set using the learned imputation models. The function <code>missForestPredict</code> will:</p>
 <ul>
-<li><p>initialize the missing values in each variable with the initialization “learned” from the training set (e.g: mean / mode)</p></li>
+<li><p>initialize the missing values in each variable with the initialization “learned” from the training set (median/mode)</p></li>
 <li><p>imperatively predict the missing values of each variable using the learned random forest models for each iteration</p></li>
 </ul>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>iris_test_imp <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForestPredict</span>(iris_train_imp_object, </span>
@@ -311,194 +297,335 @@ div.csl-indent {
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(iris_test_imp)</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     Sepal.Length Sepal.Width Petal.Length Petal.Width    Species</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55      6.329303    2.800000     4.600000         1.5 versicolor</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 75      6.400000    2.900000     4.300000         1.3 versicolor</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6       5.209457    3.900000     1.700000         0.4     setosa</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 123     7.700000    2.800000     6.700000         2.0  virginica</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 14      4.300000    3.000000     1.364757         0.1     setosa</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7       4.600000    3.004022     1.400000         0.3     setosa</span></span></code></pre></div>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55           6.5     2.80000     4.600000   1.5000000 versicolor</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 75           6.4     2.90000     4.433403   1.3000000 versicolor</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6            5.4     3.90000     1.700000   0.4000000     setosa</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 123          7.7     2.80000     6.700000   2.0000000  virginica</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 14           4.3     3.17691     1.100000   0.2101767     setosa</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7            4.6     3.40000     1.400000   0.3000000     setosa</span></span></code></pre></div>
 </div>
 <div id="imputation-of-a-single-new-observation" class="section level2">
 <h2>Imputation of a single new observation</h2>
-<p><em>missForestPredict</em> can impute a new observation with missing values.</p>
+<p><code>missForestPredict</code> can impute a new observation with missing values. The new observation has to be provided as a dataframe with one row and with named columns (the column names have to correspond to the column names of the training set).</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>single_observation <span class="ot">&lt;-</span> iris_test_miss[<span class="dv">1</span>,]</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>single_observation[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(single_observation)</span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    Sepal.Length Sepal.Width Petal.Length Petal.Width    Species</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55           NA          NA          4.6         1.5 versicolor</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55          6.5          NA          4.6         1.5 versicolor</span></span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>single_observation_imp <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForestPredict</span>(iris_train_imp_object, </span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                                                               <span class="at">newdata =</span> single_observation)</span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(single_observation_imp)</span>
 <span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    Sepal.Length Sepal.Width Petal.Length Petal.Width    Species</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55     6.327867     2.78238          4.6         1.5 versicolor</span></span></code></pre></div>
-<p>Imputation can be done even when all variables are missing for a single new observation. This is of course, not an ideal situation and probably not realistic, but it can be technically handled by the <em>missForestPredict</em> function. The observation will be initialized with the “mean observation” and the random forest models will impute iteratively.</p>
-<p><em>missForestPredict</em> package can impute observations with new missingness patterns not present in the training data as well as variables with no missingness (complete) in training data. The inialization and the random forest imputation models are “learned” for all variables in the dataset, regardless of the amount of missingness. The only condition is that the new observations follow the same data types as the ones in the training set.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>single_observation <span class="ot">&lt;-</span> iris_test_miss[<span class="dv">2</span>,]</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>single_observation[,<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="cn">NA_real_</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(single_observation)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    Sepal.Length Sepal.Width Petal.Length Petal.Width Species</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 75           NA          NA           NA          NA    &lt;NA&gt;</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>single_observation_imp <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForestPredict</span>(iris_train_imp_object, </span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                                                               <span class="at">newdata =</span> single_observation)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(single_observation_imp)</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    Sepal.Length Sepal.Width Petal.Length Petal.Width    Species</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 75     6.465033    3.058786     4.747905    1.495423 versicolor</span></span></code></pre></div>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55          6.5    3.008043          4.6         1.5 versicolor</span></span></code></pre></div>
+<p><code>missForestPredict</code> package can impute observations with new missingness patterns not present in the training data as well as variables with no missingness (complete) in training data. The initialization and the random forest imputation models are “learned” for all variables in the dataset, regardless of the amount of missingness.</p>
 </div>
 <div id="predict-without-storing-the-imputed-matrix" class="section level2">
 <h2>Predict without storing the imputed matrix</h2>
-<p>The function <em>missForest</em> returns both the imputed training dataframe as well as the imputation models.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(iris_train_imp_object, <span class="at">max.level =</span> <span class="dv">1</span>)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; List of 8</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ximp             :&#39;data.frame&#39;:   100 obs. of  5 variables:</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ OOBerror         : Named num [1:5] 0.1194 0.0958 0.0688 0.036 0.0466</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;names&quot;)= chr [1:5] &quot;Sepal.Length&quot; &quot;Sepal.Width&quot; &quot;Petal.Length&quot; &quot;Petal.Width&quot; ...</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ err_OOB_corrected: Named num [1:5] 0.1194 0.0958 0.0688 0.036 0.031</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;names&quot;)= chr [1:5] &quot;Sepal.Length&quot; &quot;Sepal.Width&quot; &quot;Petal.Length&quot; &quot;Petal.Width&quot; ...</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ init             :List of 5</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ initialization   : chr &quot;median/mode&quot;</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ models           :List of 4</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ impute_sequence  : chr [1:5] &quot;Sepal.Length&quot; &quot;Petal.Width&quot; &quot;Sepal.Width&quot; &quot;Petal.Length&quot; ...</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ maxiter          : num 10</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  - attr(*, &quot;class&quot;)= chr &quot;missForest&quot;</span></span></code></pre></div>
-<p>The imputed training data is though not necessary for imputing the test set. To avoid storing further these data in the object, <em>ximp</em> can be set to NULL.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>iris_train_imp <span class="ot">&lt;-</span> iris_train_imp_object<span class="sc">$</span>ximp</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>iris_train_imp_object<span class="sc">$</span>ximp <span class="ot">&lt;-</span> <span class="cn">NULL</span> </span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>iris_test_imp <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForestPredict</span>(iris_train_imp_object, </span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>                                                      <span class="at">newdata =</span> iris_test_miss)</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(iris_test_imp)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     Sepal.Length Sepal.Width Petal.Length Petal.Width    Species</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55      6.329303    2.800000     4.600000         1.5 versicolor</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 75      6.400000    2.900000     4.300000         1.3 versicolor</span></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6       5.209457    3.900000     1.700000         0.4     setosa</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 123     7.700000    2.800000     6.700000         2.0  virginica</span></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 14      4.300000    3.000000     1.364757         0.1     setosa</span></span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7       4.600000    3.004022     1.400000         0.3     setosa</span></span></code></pre></div>
+<p>The function <code>missForest</code> returns both the imputed training dataframe as well as the imputation models.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(iris_train_imp_object, <span class="at">max.level =</span> <span class="dv">1</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; List of 8</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ ximp           :&#39;data.frame&#39;: 100 obs. of  5 variables:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ init           :List of 5</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ initialization : chr &quot;median/mode&quot;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ impute_sequence: chr [1:5] &quot;Sepal.Length&quot; &quot;Sepal.Width&quot; &quot;Petal.Length&quot; &quot;Petal.Width&quot; ...</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ maxiter        : num 10</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ models         :List of 5</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ err_MSE        :&#39;data.frame&#39;: 5 obs. of  5 variables:</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  $ err_NMSE       :&#39;data.frame&#39;: 5 obs. of  5 variables:</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  - attr(*, &quot;class&quot;)= chr &quot;missForest&quot;</span></span></code></pre></div>
+<p>The imputed training data is though not necessary for imputing the test set. To avoid storing further these data in the object, <code>ximp</code> can be set to NULL.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>iris_train_imp <span class="ot">&lt;-</span> iris_train_imp_object<span class="sc">$</span>ximp</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>iris_train_imp_object<span class="sc">$</span>ximp <span class="ot">&lt;-</span> <span class="cn">NULL</span> </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>iris_test_imp <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForestPredict</span>(iris_train_imp_object, </span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                                      <span class="at">newdata =</span> iris_test_miss)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(iris_test_imp)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     Sepal.Length Sepal.Width Petal.Length Petal.Width    Species</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55           6.5     2.80000     4.600000   1.5000000 versicolor</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 75           6.4     2.90000     4.433403   1.3000000 versicolor</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6            5.4     3.90000     1.700000   0.4000000     setosa</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 123          7.7     2.80000     6.700000   2.0000000  virginica</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 14           4.3     3.17691     1.100000   0.2101767     setosa</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7            4.6     3.40000     1.400000   0.3000000     setosa</span></span></code></pre></div>
+<p>In <code>ximp</code> is set to NULL by mistake, and the training set imputation is lost, it can be recovered without rerunning the algorithm. Imputing the training set with the function <code>missForestPredict</code> will give the same results as the initial results of <code>missForest</code> function because the same models are applied to the variables in the same order and for the same number of iterations.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>iris_train_imp_object <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForest</span>(iris_train_miss)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 1 in progress...done!</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.184386757911946, 0.125508832271481, 0.190885886904061, 0.0474293958235265, 0.0303297414544425</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.265052345259937, 0.671430214917994, 0.0632865445207545, 0.0789602736306372, 0.136686334818797</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.756916857370376</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0599999999999996 seconds</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 2 in progress...done!</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.144011391454906, 0.104539650777098, 0.0875392899227555, 0.0432084946819917, 0.0268840237120604</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.207013548486481, 0.559252117308309, 0.0290228851323939, 0.0719333338327209, 0.121157599444189</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.0454072457888052</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0600000000000005 seconds</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 3 in progress...done!</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.14405950262543, 0.101993081556839, 0.0846137888551251, 0.0437997243776689, 0.0295599078826014</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.207082707349759, 0.545628824923885, 0.028052960867353, 0.0729176107297518, 0.133216943907124</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.000296087285244218</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0999999999999996 seconds</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 4 in progress...done!</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.142166307243506, 0.102869771851575, 0.0836663522458388, 0.0427183395089805, 0.0259652357261172</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.20436127614886, 0.550318824363425, 0.0277388465547305, 0.0711173254077677, 0.117016919166292</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.00326917122735934</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.18 seconds</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 5 in progress...done!</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.137293319624421, 0.101606569777187, 0.089526189540059, 0.0425420845798221, 0.0288293492939068</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.197356452095942, 0.543561116360402, 0.02968162430441, 0.0708238968874704, 0.129924552641309</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: -0.000158890129691391</span></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0700000000000003 seconds</span></span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a><span class="co"># store imputed dataframe</span></span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>iris_train_imp <span class="ot">&lt;-</span> iris_train_imp_object<span class="sc">$</span>ximp</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>iris_train_imp_object<span class="sc">$</span>ximp <span class="ot">&lt;-</span> <span class="cn">NULL</span> </span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a><span class="co"># re-impute the same dataframe using missForestPredict</span></span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>iris_train_imp_2 <span class="ot">&lt;-</span>  missForestPredict<span class="sc">::</span><span class="fu">missForestPredict</span>(iris_train_imp_object, </span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>                                                      <span class="at">newdata =</span> iris_train_miss)</span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(iris_train_imp, iris_train_imp_2)</span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 </div>
-<div id="impute-larger-datasets-by-adapting-num.trees-or-max.iter" class="section level2">
-<h2>Impute larger datasets by adapting <em>num.trees</em> or <em>max.iter</em></h2>
-<p>Although <em>missForestPredict</em> benefits of the improved computation time of <em>ranger</em> package, larger dataset can still prove time consuming to impute.</p>
+<div id="impute-larger-datasets-by-adapting-num.trees" class="section level2">
+<h2>Impute larger datasets by adapting <code>num.trees</code></h2>
+<p>Although <code>missForestPredict</code> benefits of the improved computation time of <code>ranger</code> package, larger dataset can still prove time consuming to impute.</p>
 <p>We will load the diamonds dataset, which contains more than 50000 observations and produce 30% missing values on each variable.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(diamonds)</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(diamonds)</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] &quot;tbl_df&quot;     &quot;tbl&quot;        &quot;data.frame&quot;</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="fu">nrow</span>(diamonds)</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>n_test <span class="ot">&lt;-</span> <span class="fu">floor</span>(N<span class="sc">/</span><span class="dv">3</span>)</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>id_test <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span>N, n_test)</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>diamonds_train <span class="ot">&lt;-</span> diamonds[<span class="sc">-</span>id_test,]</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>diamonds_test <span class="ot">&lt;-</span> diamonds[id_test,]</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>diamonds_train_miss <span class="ot">&lt;-</span> <span class="fu">prodNA</span>(diamonds_train, <span class="at">noNA =</span> <span class="fl">0.1</span>)</span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>diamonds_test_miss <span class="ot">&lt;-</span> <span class="fu">prodNA</span>(diamonds_test, <span class="at">noNA =</span> <span class="fl">0.1</span>)</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diamonds_train_miss)</span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 10</span></span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   carat cut       color clarity depth table price     x     y     z</span></span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;ord&gt;     &lt;ord&gt; &lt;ord&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1  0.23 Ideal     E     &lt;NA&gt;     61.5    55   326  3.95  3.98  2.43</span></span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2  0.21 Premium   E     SI1      59.8    61   326  3.89  3.84 NA   </span></span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3  0.23 Good      E     VS1      56.9    65   327  4.05  4.07  2.31</span></span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  0.29 Premium   I     VS2      62.4    58   334  4.2   4.23  2.63</span></span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5  0.24 Very Good &lt;NA&gt;  VVS2     NA      57   336  3.94  3.96  2.48</span></span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6  0.24 Very Good I     VVS1     62.3    57   336 NA     3.98  2.47</span></span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diamonds_test_miss)</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 10</span></span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   carat cut     color clarity depth table price     x     y     z</span></span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;ord&gt;   &lt;ord&gt; &lt;ord&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1  0.33 Ideal   E     VVS1     61.9  57    1312  4.43  4.46  2.75</span></span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2  0.3  Ideal   H     SI1      62.6  53.1   475  4.27  4.3   2.69</span></span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3  0.4  Ideal   I     &lt;NA&gt;     62    56    1240  4.74  4.77 NA   </span></span>
-<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  0.73 Ideal   F     SI1      61.7  55    3249  5.79  5.82  3.58</span></span>
-<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5  0.3  Premium E     SI2      61.9  58     540  4.31  4.28  2.66</span></span>
-<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6  1.01 Fair    F     VS2      64.8  NA    4791  6.3   6.25  4.07</span></span></code></pre></div>
-<p>The function <em>missForest</em> supports additional arguments to be passed to the <em>ranger</em> function. By default, the default values of <em>ranger</em> are used. By default, the number of trees in the forest is 500. This can be overridden by passing <em>num.trees = 100</em>, for example. Using less trees will prove to be computationally more efficient.</p>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co"># split train / test</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="fu">nrow</span>(diamonds)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>n_test <span class="ot">&lt;-</span> <span class="fu">floor</span>(N<span class="sc">/</span><span class="dv">3</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>id_test <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span>N, n_test)</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>diamonds_train <span class="ot">&lt;-</span> diamonds[<span class="sc">-</span>id_test,]</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>diamonds_test <span class="ot">&lt;-</span> diamonds[id_test,]</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>diamonds_train_miss <span class="ot">&lt;-</span> <span class="fu">produce_NA</span>(diamonds_train, <span class="at">proportion =</span> <span class="fl">0.1</span>)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>diamonds_test_miss <span class="ot">&lt;-</span> <span class="fu">produce_NA</span>(diamonds_test, <span class="at">proportion =</span> <span class="fl">0.1</span>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diamonds_train_miss)</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 10</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   carat cut       color clarity depth table price     x     y     z</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;ord&gt;     &lt;ord&gt; &lt;ord&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1  0.23 Ideal     &lt;NA&gt;  SI2      61.5    55   326  3.95  3.98  2.43</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2  0.21 Premium   E     &lt;NA&gt;     59.8    61   326  3.89  3.84  2.31</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3  0.23 Good      E     VS1      56.9    65   327  4.05  4.07  2.31</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  0.29 Premium   I     &lt;NA&gt;     62.4    58   334  4.2   4.23  2.63</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5  0.24 Very Good J     VVS2     62.8    57   336  3.94  3.96  2.48</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6  0.24 Very Good I     VVS1     NA      57   336  3.95  3.98  2.47</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diamonds_test_miss)</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 10</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   carat cut     color clarity depth table price     x     y     z</span></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;ord&gt;   &lt;ord&gt; &lt;ord&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1  0.33 Ideal   &lt;NA&gt;  &lt;NA&gt;     61.9  57    1312  4.43  4.46  2.75</span></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2  0.3  Ideal   H     SI1      62.6  53.1   475 NA     4.3   2.69</span></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3  0.4  Ideal   I     VVS2     62    56    1240  4.74  4.77  2.95</span></span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  0.73 Ideal   F     SI1      61.7  55    3249  5.79  5.82  3.58</span></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5  0.3  Premium E     SI2      NA    58     540  4.31  4.28  2.66</span></span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6  1.01 Fair    F     VS2      64.8  NA    4791  6.3   6.25  4.07</span></span></code></pre></div>
+<p>The function <code>missForest</code> supports additional parameters to be passed to the <code>ranger</code> function. By default, the default values of <code>ranger</code> are used (e.g. the number of trees in the forest is 500). This can be overridden by passing <code>num.trees = 100</code>. Using less trees will prove to be computationally more efficient.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>diamonds_train_imp_object <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForest</span>(diamonds_train_miss, </span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">verbose =</span> <span class="cn">TRUE</span>, </span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">num.trees =</span> <span class="dv">100</span>)</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 1 in progress...done!</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:   0.00038154876069446, 0.0739237333116743, 0.0966992807924507, 0.0619274874618265, 0.229368579228414, 2.2964640153219, 460578.450416997, 0.00557214802693175, 0.106073087515158, 0.00669976458755452</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:  0.00170036560305889, 0.516245886375612, 0.806701555068549, 0.602235352268807, 0.111187216188012, 0.46357726725992, 0.0289028792370674, 0.00444588114114149, 0.0785795040536374, 0.0138815687285051</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     differences:      0.998299634396941, 0.483754113624388, 0.193298444931451, 0.397764647731193, 0.888812783811988, 0.53642273274008, 0.971097120762933, 0.995554118858858, 0.921420495946363, 0.986118431271495</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     difference total: 7.37254252407569</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:             11.5 seconds</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 2 in progress...done!</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:   0.000340591599507167, 0.0634756175713262, 0.0883522708455856, 0.0604596879601873, 0.197121634349139, 2.26761183599291, 317702.84129016, 0.0023424353630856, 0.105106797677366, 0.00633128038787546</span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:  0.00151784070648984, 0.443281541506963, 0.737067677245185, 0.587961226413554, 0.0955553975502712, 0.457753002495229, 0.0199369441769778, 0.00186897210101931, 0.0778636714328995, 0.0131180883589536</span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     differences:      0.000182524896569045, 0.0729643448686486, 0.0696338778233645, 0.0142741258552522, 0.0156318186377412, 0.00582426476469056, 0.00896593506008958, 0.00257690904012218, 0.000715832620737877, 0.000763480369551478</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     difference total: 0.191533113936767</span></span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:             11.44 seconds</span></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 3 in progress...done!</span></span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:   0.00035004701943442, 0.0633328108026316, 0.0880878791648364, 0.0605960370331938, 0.202718556069479, 2.26689378799238, 320654.243188267, 0.00243478158795319, 0.105172720267713, 0.00641554409371228</span></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:  0.00155997862557916, 0.442284251413748, 0.734862022991506, 0.589287200312693, 0.0982685248120793, 0.457608053248198, 0.0201221547802178, 0.00194265290375643, 0.0779125072363694, 0.0132926784372477</span></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     differences:      -4.21379190893216e-05, 0.000997290093214476, 0.00220565425367925, -0.0013259738991388, -0.00271312726180804, 0.000144949247031345, -0.000185210603239967, -7.36808027371246e-05, -4.88358034699266e-05, -0.00017459007829409</span></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     difference total: -0.00121566277385243</span></span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:             11.37 seconds</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="co"># impute test set</span></span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>diamonds_train_imp_object<span class="sc">$</span>ximp <span class="ot">&lt;-</span> <span class="cn">NULL</span> </span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>diamonds_test_imp <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForestPredict</span>(diamonds_train_imp_object,</span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">newdata =</span> diamonds_test_miss)</span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diamonds_test_imp)</span>
-<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 10</span></span>
-<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   carat cut     color clarity depth table price     x     y     z</span></span>
-<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;ord&gt;   &lt;ord&gt; &lt;ord&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
-<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1  0.33 Ideal   E     VVS1     61.9  57    1312  4.43  4.46  2.75</span></span>
-<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2  0.3  Ideal   H     SI1      62.6  53.1   475  4.27  4.3   2.69</span></span>
-<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3  0.4  Ideal   I     IF       62    56    1240  4.74  4.77  2.94</span></span>
-<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  0.73 Ideal   F     SI1      61.7  55    3249  5.79  5.82  3.58</span></span>
-<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5  0.3  Premium E     SI2      61.9  58     540  4.31  4.28  2.66</span></span>
-<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6  1.01 Fair    F     VS2      64.8  57.4  4791  6.3   6.25  4.07</span></span></code></pre></div>
-<p>Alternatively, the <em>maxiter</em> parameter can be set to a lower number (the default is 10).</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">#set.seed(2022)</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co">#diamonds_train_imp_object &lt;- missForestPredict::missForest(diamonds_train_miss, verbose = TRUE, maxiter = 2)</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="do">## impute test set</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co">#diamonds_train_imp_object$ximp &lt;- NULL </span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co">#diamonds_test_imp &lt;- missForestPredict::missForestPredict(diamonds_train_imp_object, newdata = diamonds_test_miss)</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co">#head(diamonds_test_imp)</span></span></code></pre></div>
-<p>Note that not all arguments to ranger function are supported. Arguments that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic arguments that can be applied to all variables are supported (like: <em>num.trees, mtry, min.node.size, max.depth, replce,</em> …)</p>
-</div>
-<div id="perform-imputation-in-descending-order" class="section level2">
-<h2>Perform imputation in descending order</h2>
-<p>TODO: test if it’s worth it</p>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">num.trees =</span> <span class="dv">100</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 1 in progress...done!</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.000743496780825689, 0.0769294112146851, 0.0985155159051316, 0.0685527698069309, 0.384711546540205, 2.34111747337108, 359719.657837223, 0.0064531727598744, 0.0243049886717884, 0.00741240367686914</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.00332395655622506, 0.537195051969248, 0.821679469708538, 0.666601612458523, 0.187125020044575, 0.472196261001471, 0.02249560035323, 0.00511904211297531, 0.0193368223335865, 0.0153711975271816</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.724955596593445</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       11.65 seconds</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 2 in progress...done!</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.000374899545481199, 0.0637328743064622, 0.088891167674777, 0.0606486635708705, 0.187660512163793, 2.2717939256112, 320249.858609436, 0.00540897926535541, 0.024440635376651, 0.00742470824886864</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.00167606617037956, 0.445044153914882, 0.741406537292253, 0.589742720004719, 0.0912787188636014, 0.458213912646928, 0.0200272981348054, 0.00429072545829435, 0.0194447415870157, 0.0153967136775341</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.0363922446315141</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       14.14 seconds</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 3 in progress...done!</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.000371365907017232, 0.0632891252379298, 0.0882261112208388, 0.0602752448047192, 0.187138805076299, 2.26923878142081, 320832.746688972, 0.00516566026168996, 0.0237237767503412, 0.00739117894418321</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.0016602683067673, 0.441945471627215, 0.735859560966976, 0.586111625997288, 0.09102495874103, 0.457698547849243, 0.0200637499021809, 0.0040977102899425, 0.0188744155489156, 0.0153271835240595</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.00138580949967954</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       13.66 seconds</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 4 in progress...done!</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.000377293410348567, 0.0633237952425312, 0.0882291990219114, 0.0600914975799821, 0.183898934864887, 2.25856278695551, 321433.97336181, 0.00560036845363586, 0.0263661602674207, 0.00750154071464129</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.00168676843974482, 0.442187570905365, 0.735885315110621, 0.584324882782689, 0.0894490747216807, 0.455545232295315, 0.0201013485005872, 0.00444254679505878, 0.0209766712338264, 0.0155560421571173</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.000250803981161146</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       13.37 seconds</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 5 in progress...done!</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.000365854087567819, 0.0633076314814127, 0.0881345407494727, 0.0603978117924092, 0.187632771823598, 2.26528442922429, 314850.191103114, 0.00570151491924675, 0.0249782548489703, 0.00749003407328728</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.0016356265747947, 0.442074699997387, 0.735095807403268, 0.587303457514213, 0.0912652258666753, 0.456900967060106, 0.0196896219483193, 0.00452278221355869, 0.0198724666256776, 0.0155321806858808</span></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: -0.000373738294787429</span></span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       16.5 seconds</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a><span class="co"># impute test set</span></span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>diamonds_train_imp_object<span class="sc">$</span>ximp <span class="ot">&lt;-</span> <span class="cn">NULL</span> </span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>diamonds_test_imp <span class="ot">&lt;-</span> missForestPredict<span class="sc">::</span><span class="fu">missForestPredict</span>(diamonds_train_imp_object,</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">newdata =</span> diamonds_test_miss)</span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diamonds_test_imp)</span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 10</span></span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   carat cut     color clarity depth table price     x     y     z</span></span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;ord&gt;   &lt;ord&gt; &lt;ord&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1  0.33 Ideal   E     VVS1     61.9  57    1312  4.43  4.46  2.75</span></span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2  0.3  Ideal   H     SI1      62.6  53.1   475  4.29  4.3   2.69</span></span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3  0.4  Ideal   I     VVS2     62    56    1240  4.74  4.77  2.95</span></span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  0.73 Ideal   F     SI1      61.7  55    3249  5.79  5.82  3.58</span></span>
+<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5  0.3  Premium E     SI2      62.0  58     540  4.31  4.28  2.66</span></span>
+<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6  1.01 Fair    F     VS2      64.8  57.0  4791  6.3   6.25  4.07</span></span></code></pre></div>
+<p>Alternatively, the <code>maxiter</code> parameter can be set to a lower number (the default is 10) or other <code>ranger</code> parameters can be adapted. Note that not all parameters to ranger function are supported. Parameters that should be adapted in function of the imputed variable (outcome for the ranger function) are not supported. Generic parameters that can be applied to all variables are supported (like: <code>num.trees, mtry, min.node.size, max.depth, replace,</code> …), as well as <code>class.weights</code> for factor variables.</p>
 </div>
 <div id="custom-initialization" class="section level2">
 <h2>Custom initialization</h2>
-<p>The parameter <em>initialization</em> suppots three values: <em>mean/mode</em>, <em>median/mode</em> and <em>custom</em>. The default is median/mode, which will initialize each variable with the median (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable.</p>
-<p>When <em>custom</em> is used, a complete dataframe is expected in <em>x_init</em>. For example, the imputations of another imputation method can be used as initialization. When <em>custom</em> is used in <em>missForest</em> function, an initialization dataframe has to be passed to the <em>missForestPredict</em> function later on too.</p>
-<p>We will exemplify this with an initialization via linear models on the <em>diamonds</em> dataset.</p>
+<p>The parameter <code>initialization</code> supports three values: <code>mean/mode</code>, <code>median/mode</code> and <code>custom</code>. The default is median/mode, which will initialize each variable with the median (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable.</p>
+<p>When <code>custom</code> is used, a complete dataframe is expected in <code>x_init</code>. For example, the imputations of another imputation method can be used as initialization. When <code>custom</code> is used in <code>missForest</code> function, an initialization dataframe has to be passed to the <code>missForestPredict</code> function later on too.</p>
+<p>We will exemplify this with an initialization using linear models on the <code>iris</code> dataset. Let’s assume that variables <code>Petal.Width</code> and <code>Species</code> are known to be never missing. We will regress the other variables on these two variables and save the linear models to be applied on the test set afterwards.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(iris)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># split train / test</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="fu">nrow</span>(iris)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>n_test <span class="ot">&lt;-</span> <span class="fu">floor</span>(N<span class="sc">/</span><span class="dv">3</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>id_test <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span>N, n_test)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>iris_train <span class="ot">&lt;-</span> iris[<span class="sc">-</span>id_test,]</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>iris_test <span class="ot">&lt;-</span> iris[id_test,]</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># produce missing values</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>iris_train_miss <span class="ot">&lt;-</span> <span class="fu">produce_NA</span>(iris_train, <span class="at">proportion =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>iris_test_miss <span class="ot">&lt;-</span> <span class="fu">produce_NA</span>(iris_test, <span class="at">proportion =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co"># build linear models for Sepal.Length, Sepal.Width, Petal.Length using complete cases for each variable</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>fit_1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Sepal.Length <span class="sc">~</span> ., <span class="at">data =</span> iris_train_miss[<span class="sc">!</span><span class="fu">is.na</span>(iris_train_miss<span class="sc">$</span>Sepal.Length), </span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>                                                     <span class="fu">c</span>(<span class="st">&quot;Sepal.Length&quot;</span>, <span class="st">&quot;Petal.Width&quot;</span>, <span class="st">&quot;Species&quot;</span>)])</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>fit_2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Sepal.Width <span class="sc">~</span> ., <span class="at">data =</span> iris_train_miss[<span class="sc">!</span><span class="fu">is.na</span>(iris_train_miss<span class="sc">$</span>Sepal.Width), </span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>                                                    <span class="fu">c</span>(<span class="st">&quot;Sepal.Width&quot;</span>, <span class="st">&quot;Petal.Width&quot;</span>, <span class="st">&quot;Species&quot;</span>)])</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>fit_3 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Petal.Length <span class="sc">~</span> ., <span class="at">data =</span> iris_train_miss[<span class="sc">!</span><span class="fu">is.na</span>(iris_train_miss<span class="sc">$</span>Petal.Length), </span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>                                                     <span class="fu">c</span>(<span class="st">&quot;Petal.Length&quot;</span>, <span class="st">&quot;Petal.Width&quot;</span>, <span class="st">&quot;Species&quot;</span>)])</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="co"># impute training with predictions of linear model</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>iris_train_init <span class="ot">&lt;-</span> iris_train_miss</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>iris_train_init<span class="sc">$</span>Sepal.Length[<span class="fu">is.na</span>(iris_train_init<span class="sc">$</span>Sepal.Length)] <span class="ot">&lt;-</span> </span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(fit_1, iris_train_init[<span class="fu">is.na</span>(iris_train_init<span class="sc">$</span>Sepal.Length), <span class="fu">c</span>(<span class="st">&quot;Petal.Width&quot;</span>, <span class="st">&quot;Species&quot;</span>)])</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>iris_train_init<span class="sc">$</span>Sepal.Width[<span class="fu">is.na</span>(iris_train_init<span class="sc">$</span>Sepal.Width)] <span class="ot">&lt;-</span> </span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(fit_2, iris_train_init[<span class="fu">is.na</span>(iris_train_init<span class="sc">$</span>Sepal.Width), <span class="fu">c</span>(<span class="st">&quot;Petal.Width&quot;</span>, <span class="st">&quot;Species&quot;</span>)])</span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>iris_train_init<span class="sc">$</span>Petal.Length[<span class="fu">is.na</span>(iris_train_init<span class="sc">$</span>Petal.Length)] <span class="ot">&lt;-</span> </span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(fit_3, iris_train_init[<span class="fu">is.na</span>(iris_train_init<span class="sc">$</span>Petal.Length), <span class="fu">c</span>(<span class="st">&quot;Petal.Width&quot;</span>, <span class="st">&quot;Species&quot;</span>)])</span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a><span class="co"># impute the training set using this initialization</span></span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>iris_train_imp_obj <span class="ot">&lt;-</span> <span class="fu">missForest</span>(iris_train_miss, </span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">OOB_weights =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>),</span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">initialization =</span> <span class="st">&quot;custom&quot;</span>, </span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">x_init =</span> iris_train_init)</span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 1 in progress...done!</span></span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.163933654954688, 0.0882494745289653, 0.118292105872923, 0.0306545974292527, 0.0234681553658301</span></span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.252490812240121, 0.510752551784412, 0.0385064060474997, 0.0514743670959471, 0.105648958729727</span></span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.732750076642656</span></span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0600000000000023 seconds</span></span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 2 in progress...done!</span></span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.137096628439939, 0.0832399892320051, 0.0957429358514928, 0.0323552714675996, 0.0212534743045305</span></span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.211156391771722, 0.481759660753553, 0.0311662078958829, 0.0543300927326139, 0.0956789059327602</span></span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.0258891698836252</span></span>
+<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0700000000000074 seconds</span></span>
+<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 3 in progress...done!</span></span>
+<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.128854552836604, 0.0801770674958631, 0.095563114533803, 0.0339263268997459, 0.021393819615777</span></span>
+<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.198461937029004, 0.464032698627144, 0.0311076725217439, 0.0569681663275786, 0.096310712556019</span></span>
+<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: 0.0101599840810886</span></span>
+<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.140000000000001 seconds</span></span>
+<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   missForest iteration 4 in progress...done!</span></span>
+<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors MSE:             0.135958463726782, 0.0830331384835583, 0.0955956970689075, 0.0341691537229892, 0.0212673805450146</span></span>
+<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     OOB errors NMSE:            0.209403389113619, 0.480562491612641, 0.0311182787774828, 0.0573759145313908, 0.0957415090561881</span></span>
+<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     (weigthed) difference NMSE: -0.00916061710861724</span></span>
+<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     time:                       0.0600000000000023 seconds</span></span>
+<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a><span class="co"># build test set initialization using the linear models learned on training</span></span>
+<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a>iris_test_init <span class="ot">&lt;-</span> iris_test_miss</span>
+<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a>iris_test_init<span class="sc">$</span>Sepal.Length[<span class="fu">is.na</span>(iris_test_init<span class="sc">$</span>Sepal.Length)] <span class="ot">&lt;-</span> </span>
+<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(fit_1, iris_test_init[<span class="fu">is.na</span>(iris_test_init<span class="sc">$</span>Sepal.Length), <span class="fu">c</span>(<span class="st">&quot;Petal.Width&quot;</span>, <span class="st">&quot;Species&quot;</span>)])</span>
+<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>iris_test_init<span class="sc">$</span>Sepal.Width[<span class="fu">is.na</span>(iris_test_init<span class="sc">$</span>Sepal.Width)] <span class="ot">&lt;-</span> </span>
+<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(fit_2, iris_test_init[<span class="fu">is.na</span>(iris_test_init<span class="sc">$</span>Sepal.Width), <span class="fu">c</span>(<span class="st">&quot;Petal.Width&quot;</span>, <span class="st">&quot;Species&quot;</span>)])</span>
+<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a>iris_test_init<span class="sc">$</span>Petal.Length[<span class="fu">is.na</span>(iris_test_init<span class="sc">$</span>Petal.Length)] <span class="ot">&lt;-</span> </span>
+<span id="cb14-72"><a href="#cb14-72" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(fit_3, iris_test_init[<span class="fu">is.na</span>(iris_test_init<span class="sc">$</span>Petal.Length), <span class="fu">c</span>(<span class="st">&quot;Petal.Width&quot;</span>, <span class="st">&quot;Species&quot;</span>)])</span>
+<span id="cb14-73"><a href="#cb14-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-74"><a href="#cb14-74" aria-hidden="true" tabindex="-1"></a><span class="co"># impute test set</span></span>
+<span id="cb14-75"><a href="#cb14-75" aria-hidden="true" tabindex="-1"></a>iris_test_imp <span class="ot">&lt;-</span> <span class="fu">missForestPredict</span>(iris_train_imp_obj, <span class="at">newdata =</span> iris_test_miss, <span class="at">x_init =</span> iris_test_init)</span>
+<span id="cb14-76"><a href="#cb14-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-77"><a href="#cb14-77" aria-hidden="true" tabindex="-1"></a><span class="fu">evaluate_imputation_error</span>(iris_test_imp, iris_test_miss, iris_test)</span>
+<span id="cb14-78"><a href="#cb14-78" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       variable       MSE       NMSE MER</span></span>
+<span id="cb14-79"><a href="#cb14-79" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 Sepal.Length 0.1422054 0.29725212  NA</span></span>
+<span id="cb14-80"><a href="#cb14-80" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2  Sepal.Width 0.1611004 0.72404672  NA</span></span>
+<span id="cb14-81"><a href="#cb14-81" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 Petal.Length 0.1107817 0.04607456  NA</span></span>
+<span id="cb14-82"><a href="#cb14-82" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  Petal.Width 0.0000000 0.00000000  NA</span></span>
+<span id="cb14-83"><a href="#cb14-83" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5      Species        NA         NA   0</span></span>
+<span id="cb14-84"><a href="#cb14-84" aria-hidden="true" tabindex="-1"></a><span class="fu">evaluate_imputation_error</span>(iris_test_init, iris_test_miss, iris_test)</span>
+<span id="cb14-85"><a href="#cb14-85" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       variable       MSE       NMSE MER</span></span>
+<span id="cb14-86"><a href="#cb14-86" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 Sepal.Length 0.1362000 0.28469896  NA</span></span>
+<span id="cb14-87"><a href="#cb14-87" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2  Sepal.Width 0.1331878 0.59859694  NA</span></span>
+<span id="cb14-88"><a href="#cb14-88" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 Petal.Length 0.1630601 0.06781738  NA</span></span>
+<span id="cb14-89"><a href="#cb14-89" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  Petal.Width 0.0000000 0.00000000  NA</span></span>
+<span id="cb14-90"><a href="#cb14-90" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5      Species        NA         NA   0</span></span></code></pre></div>
+<p>Note that we chose to set the <code>OOB_weights</code> parameter so that the errors of the last 2 variables are not taken into account when calculating the convergence criteria.</p>
 </div>
+</div>
+<div id="final-words" class="section level1">
+<h1>Final words</h1>
+<p>The package <code>missForestPredict</code> is based on the <code>missForest</code> package <span class="citation">(Stekhoven and Bühlmann 2012)</span> with additional functionality for convergence criteria, initialization and imputation of new observations.</p>
+<p>Other imputation packages based on random forests are available in the R ecosystem, using iterative algorithms, like <code>missRanger</code> <span class="citation">(Mayer and Mayer 2019)</span>, <code>mice</code> <span class="citation">(Van Buuren, Oudshoorn, and Jong 2007)</span>, <code>CALIBERrfimpute</code> <span class="citation">(Shah et al. 2021)</span>, <code>miceRanger</code> <span class="citation">(Wilson 2020)</span>. These provide various extended functionality, but they do not support the imputation of new observations. Non-iterative algorithms are also available: the function <code>rfImpute</code> in the <code>randomForest</code> <span class="citation">(Liaw and Wiener 2002)</span> package requires presence of the outcome at imputation time, which makes it inadequate for prediction settings; <code>caret</code> <span class="citation">(Kuhn and others 2008)</span> implements bagged trees without iterations and will impute new observations for most missingness patterns; <code>imputeMissings</code> implements random forests non-iteratively but will require a test set for initialization.</p>
+<p>The R package <code>missForestPredict</code> uses an iterative algorithm and can impute a single new observation in (applied) prediction settings, even when the new observation exhibits a missingness pattern not encountered in the training set. It is therefore suitable for (applied) prediction settings.</p>
 </div>
 <div id="references" class="section level1 unnumbered">
 <h1 class="unnumbered">References</h1>
 <div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-anderson1935irises" class="csl-entry">
+Anderson, Edgar. 1935. <span>“The Irises of the Gaspe Peninsula.”</span> <em>Bull. Am. Iris Soc.</em> 59: 2–5.
+</div>
 <div id="ref-breiman01" class="csl-entry">
 Breiman, L. 2001. <span>“<span class="nocase">Random forests</span>.”</span> <em>Machine Learning</em> 45 (1): 5–32.
 </div>
 <div id="ref-brier1950verification" class="csl-entry">
 Brier, Glenn W, and others. 1950. <span>“Verification of Forecasts Expressed in Terms of Probability.”</span> <em>Monthly Weather Review</em> 78 (1): 1–3.
 </div>
+<div id="ref-kuhn2008caret" class="csl-entry">
+Kuhn, Max, and others. 2008. <span>“Caret Package.”</span> <em>Journal of Statistical Software</em> 28 (5): 1–26.
+</div>
+<div id="ref-randomForestPackage" class="csl-entry">
+Liaw, Andy, and Matthew Wiener. 2002. <span>“Classification and Regression by randomForest.”</span> <em>R News</em> 2 (3): 18–22. <a href="https://CRAN.R-project.org/doc/Rnews/">https://CRAN.R-project.org/doc/Rnews/</a>.
+</div>
+<div id="ref-mayer2019package" class="csl-entry">
+Mayer, Michael, and Maintainer Michael Mayer. 2019. <span>“Package <span>‘missRanger’</span>.”</span> <em>R Package</em>.
+</div>
+<div id="ref-shah2021package" class="csl-entry">
+Shah, Anoop, Jonathan Bartlett, Harry Hemingway, Owen Nicholas, Aroon Hingorani, Maintainer Anoop Shah, and TRUE BuildVignettes. 2021. <span>“Package <span>‘CALIBERrfimpute’</span>.”</span>
+</div>
 <div id="ref-stekhoven2012missforest" class="csl-entry">
 Stekhoven, Daniel J, and Peter Bühlmann. 2012. <span>“MissForest—Non-Parametric Missing Value Imputation for Mixed-Type Data.”</span> <em>Bioinformatics</em> 28 (1): 112–18.
+</div>
+<div id="ref-van2007mice" class="csl-entry">
+Van Buuren, Stef, CGM Oudshoorn, and Maintainer Roel de Jong. 2007. <span>“The MICE Package.”</span> <em>URL Https://Www. Rdocumentation. Org/Packages/Mice/Versions/2.25</em>.
+</div>
+<div id="ref-ggplot2" class="csl-entry">
+Wickham, Hadley. 2016. <em>Ggplot2: Elegant Graphics for Data Analysis</em>. Springer-Verlag New York. <a href="https://ggplot2.tidyverse.org">https://ggplot2.tidyverse.org</a>.
+</div>
+<div id="ref-wilson2020miceranger" class="csl-entry">
+Wilson, S. 2020. <span>“miceRanger: Multiple Imputation by Chained Equations with Random Forests. R Package Version 1.3. 5.”</span>
 </div>
 <div id="ref-JSSv077i01" class="csl-entry">
 Wright, Marvin N., and Andreas Ziegler. 2017. <span>“Ranger: A Fast Implementation of Random Forests for High Dimensional Data in c++ and r.”</span> <em>Journal of Statistical Software</em> 77 (1): 1–17. <a href="https://doi.org/10.18637/jss.v077.i01">https://doi.org/10.18637/jss.v077.i01</a>.
