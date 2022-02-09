@@ -48,7 +48,7 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue, all = FALSE){
 
     if (varType[[col]] == "numeric") {
 
-      if (length(ximp[misi,col]) > 0) {
+      if (length(ximp[misi, col, drop = TRUE]) > 0) {
         results[results$variable == col, "MSE"] <- mse(ximp[ind, col, drop = TRUE], xtrue[ind, col, drop = TRUE])
         results[results$variable == col, "NMSE"] <- nmse(ximp[ind, col, drop = TRUE], xtrue[ind, col, drop = TRUE])
       } else {
@@ -57,7 +57,7 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue, all = FALSE){
       }
 
     } else {
-      if (length(ximp[misi,col]) > 0) {
+      if (length(ximp[misi, col, drop = TRUE]) > 0) {
         results[results$variable == col, "MER"] <- mer(ximp[ind, col, drop = TRUE], xtrue[ind, col, drop = TRUE])
       } else {
         results[results$variable == col, "MER"] <- 0
