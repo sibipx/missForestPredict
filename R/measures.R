@@ -21,9 +21,13 @@ BS <- function (probabilities, y) {
 #' @noRd
 
 BSnorm <- function (probabilities, y) {
-  #BS_reference <- BS(colMeans(y), y) # refrence is a "no skill learner" that predicts the class prevalence
+  # reference is a "no skill learner" that predicts the class prevalence
   BS_reference <- BS(matrix(rep(colMeans(y), nrow(y)), nrow = nrow(y), byrow = TRUE), y)
-  BS(probabilities, y) / BS_reference
+  if (BS_reference == 0){ # avoid division by 0
+    return(0)
+  } else {
+    return(BS(probabilities, y) / BS_reference)
+  }
 }
 
 #' Mean Square Error - MSE

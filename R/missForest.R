@@ -195,10 +195,8 @@ missForest <- function(xmis,
         # if the column is not complete, impute the missing values
         if (nrow(misX) > 0) {
           misY <- predict(RF, misX)$predictions
-        } else {
-          misY <- c()
+          ximp[misi, col] <- misY
         }
-        ximp[misi, col] <- misY
 
         # save the OOB error for convergence (NMSE)
         err_NMSE[iter, col] <- RF$prediction.error / var(ximp[obsi, col])
@@ -207,42 +205,35 @@ missForest <- function(xmis,
 
       } else {
         obsY <- factor(obsY, levels = unique(ximp[, col, drop = TRUE]))
-        summarY <- summary(obsY)
-        if (length(summarY) == 1) {
-          misY <- factor(rep(names(summarY), sum(misi)))
-        } else {
 
-          RF <- ranger(x = obsX, y = obsY,
-                       probability = TRUE,
-                       class.weights = class.weights[[col]],
-                       ...)
+        RF <- ranger(x = obsX, y = obsY,
+                     probability = TRUE,
+                     class.weights = class.weights[[col]],
+                     ...)
 
-          # save model
-          models[[iter]][[col]] <- RF
+        # save model
+        models[[iter]][[col]] <- RF
 
-          # if the column is not complete, impute the missing values
-          if (nrow(misX) > 0) {
+        # if the column is not complete, impute the missing values
+        if (nrow(misX) > 0) {
+          # if factor, return factor
+          preds <- predict(RF, misX)$predictions
+          levels <- colnames(preds)
 
-            # if factor, return factor
-            preds <- predict(RF, misX)$predictions
-            levels <- colnames(preds)
-            misY <- apply(preds, 1, function(x) levels[which.max(x)])
-
-          } else {
-            misY <- c()
-          }
-          ximp[misi, col] <- misY
-
-          # save OOB error
-          # drop levels if they don't exist
-          ximp_binary <- make_binary(factor(ximp[, col, drop = TRUE], levels = unique(ximp[, col, drop = TRUE])))
-          col_order <- colnames(ximp_binary)
-
-          # save OOB error (NMSE)
-          err_NMSE[iter, col] <- BSnorm(RF$predictions[,col_order], ximp_binary[obsi,])
-          # save OOB error (MSE = Brier score divided by number of categories)
-          err_MSE[iter, col] <- BS(RF$predictions[,col_order], ximp_binary[obsi,])/ncol(ximp_binary[obsi,])
+          # impute
+          ximp[misi, col] <- apply(preds, 1, function(x) levels[which.max(x)])
         }
+
+        # save OOB error
+        # drop levels if they don't exist
+        ximp_binary <- make_binary(factor(ximp[, col, drop = TRUE], levels = unique(ximp[, col, drop = TRUE])))
+        col_order <- colnames(ximp_binary)
+
+        # save OOB error (NMSE)
+        err_NMSE[iter, col] <- BSnorm(RF$predictions[,col_order], ximp_binary[obsi, , drop = FALSE])
+        # save OOB error (MSE = Brier score divided by number of categories)
+        err_MSE[iter, col] <- BS(RF$predictions[,col_order], ximp_binary[obsi, , drop = FALSE]) /
+          ncol(ximp_binary[obsi, , drop = FALSE])
       }
     }
 
