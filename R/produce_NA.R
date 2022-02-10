@@ -1,5 +1,8 @@
 #' Produces a dataframe with missing values
 #'
+#' Produces a dataframe with missing values.
+#' For each variable, a random sample of observations of size \code{proportion * nrow(x)} will be set to NA.
+#'
 #' @param x a dataframe
 #' @param proportion proportion of missing values to be produced; a vector of size \code{ncol(x)} or a single value to be applied to all variables in the dataframe
 #'

@@ -1,6 +1,8 @@
 #' Evaluate the imputation error when true values are known.
 #'
 #' Evaluate the imputation error when true values are known. Useful when missing values are simulated.
+#' For continous variables, MSE (mean square error) and NMSE (normalized mean sqaure error) are returned.
+#' For categorical variables, MER (misclassification error rate) is returned. TODO: add in details formulas
 #'
 #' @param ximp imputed dataframe
 #' @param xmis original dataframe with missing values
