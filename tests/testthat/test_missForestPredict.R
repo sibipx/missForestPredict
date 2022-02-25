@@ -3,7 +3,7 @@ context("missForestPredict")
 library(missForestPredict)
 library(testthat)
 
-test_that("tibble retruns tibble", {
+test_that("tibble returns tibble", {
 
   require(tidyverse)
 
@@ -20,6 +20,24 @@ test_that("tibble retruns tibble", {
 
   expect_is(iris_test_tbl_imp, "tbl_df")
   expect_is(missForest_object_tbl$ximp, "tbl_df")
+
+})
+
+test_that("dataframe returns dataframe", {
+
+  require(tidyverse)
+
+  data(iris)
+  set.seed(2022)
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
+
+  set.seed(2022)
+  missForest_object_df <- missForestPredict::missForest(iris_train, verbose = FALSE)
+  iris_test_df_imp <- missForestPredict::missForestPredict(missForest_object_df, newdata = iris_test)
+
+  expect_is(iris_test_df_imp, "data.frame")
+  expect_is(missForest_object_df$ximp, "data.frame")
 
 })
 
@@ -66,31 +84,28 @@ test_that("tibble and dataframe results are the same for missForestPredict", {
 
 })
 
-test_that("tibble retruns tibble", {
-
-  require(tidyverse)
-
-  data(iris)
-  set.seed(2022)
-  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
-  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
-  iris_train_tbl <- as_tibble(iris_train)
-  iris_test_tbl <- as_tibble(iris_test, rownames = NA)
-
-  set.seed(2022)
-  missForest_object_tbl <- missForestPredict::missForest(iris_train_tbl, verbose = FALSE)
-  iris_test_tbl_imp <- missForestPredict::missForestPredict(missForest_object_tbl, newdata = iris_test_tbl)
-
-  expect_is(iris_test_tbl_imp, "tbl_df")
-  expect_is(missForest_object_tbl$ximp, "tbl_df")
-
-})
-
-test_that("prediction on training set is the same as imputation", {
+test_that("prediction on training set is the same as imputation on dataframe", {
 
   data(iris)
   set.seed(2022)
   iris_mis <- produce_NA(iris, proportion = 0.1)
+
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris_mis, verbose = FALSE)
+  iris_imp_df <- missForest_object$ximp
+
+  missForest_predictions <- missForestPredict::missForestPredict(missForest_object, newdata = iris_mis)
+
+  expect_equal(iris_imp_df, missForest_predictions)
+
+})
+
+test_that("prediction on training set is the same as imputation on tibble", {
+
+  data(iris)
+  set.seed(2022)
+  iris_mis <- produce_NA(iris, proportion = 0.1)
+  iris_mis <- as_tibble(iris_mis)
 
   set.seed(2022)
   missForest_object <- missForestPredict::missForest(iris_mis, verbose = FALSE)
@@ -107,6 +122,19 @@ test_that("imputing complete dataframe returns the same dataframe", {
   data(iris)
 
   set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris, verbose = FALSE)
+  iris_imp_df <- missForest_object$ximp
+
+  expect_equal(iris_imp_df, iris)
+
+})
+
+test_that("imputing complete tibble returns the same tibble", {
+
+  data(iris)
+
+  set.seed(2022)
+  iris <- as_tibble(iris)
   missForest_object <- missForestPredict::missForest(iris, verbose = FALSE)
   iris_imp_df <- missForest_object$ximp
 
@@ -133,8 +161,37 @@ test_that("imputation is the same for factor and character", {
 
   iris_imp_df_char$Species <- as.factor(iris_imp_df_char$Species)
 
-  head(iris_imp_df_char)
-
   expect_equal(iris_imp_df, iris_imp_df_char)
+
+})
+
+test_that("imputation prediction is the same for factor and character", {
+
+  data(iris)
+
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
+
+  #iris_train$Species <- as.factor(iris_train$Species)
+  #iris_test$Species <- as.factor(iris_test$Species)
+  set.seed(2022)
+  missForest_object_fct <- missForestPredict::missForest(iris_train, verbose = FALSE)
+  missForest_predictions_fct <- missForestPredict::missForestPredict(missForest_object_fct,
+                                                                     newdata = iris_test)
+
+  iris_train_chr <- iris_train
+  iris_test_chr <- iris_test
+  iris_train_chr$Species <- as.character(iris_train_chr$Species)
+  iris_test_chr$Species <- as.character(iris_test_chr$Species)
+  set.seed(2022)
+  missForest_object_char <- missForestPredict::missForest(iris_train_chr, verbose = FALSE)
+  missForest_predictions_char <- missForestPredict::missForestPredict(missForest_object_char,
+                                                                      newdata = iris_test_chr)
+
+  #missForest_predictions_char$Species <- as.factor(missForest_predictions_char$Species)
+
+  # TODO: I don't understand why this test fails!
+
+  expect_equal(missForest_predictions_fct, missForest_predictions_char)
 
 })
