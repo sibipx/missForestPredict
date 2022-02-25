@@ -80,7 +80,7 @@ missForestPredict <- function(missForestObj, newdata, x_init = NULL){
           model <- iter_models[[c]]
 
           #if (class(ximp[,c]) == "factor"){
-          if (is(ximp[, c, drop = TRUE], "factor")){
+          if (is(ximp[, c, drop = TRUE], "factor") | is(ximp[, c, drop = TRUE], "character")){
             # if factor, return factor
             preds <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
             levels <- colnames(preds)
