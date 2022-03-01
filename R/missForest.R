@@ -84,7 +84,9 @@ missForest <- function(xmis,
 
   var_type <- unlist(lapply(xmis, column_class))
 
-  if (any(is.na(var_type))) stop("Only numeric or factor columns are supported. Logical or other types are not supported.")
+  if (any(is.na(var_type)))
+    stop(sprintf("Only numeric or factor columns are supported. Logical or other types are not supported. Unsupported variables: %s",
+                 paste(names(var_type)[is.na(var_type)], collapse = ", ")))
 
   # check class.weights for factor variables
   if(!is.null(class.weights)){
