@@ -102,6 +102,16 @@ missForest <- function(xmis,
     }
   }
 
+  # check factor / character with many levels
+  for (c in col_names) {
+    if (var_type[c] == "factor"){
+      unique_levels <- length(unique(xmis[, c, drop = TRUE]))
+      if (unique_levels > 53)
+        message(sprintf("Variable %s has %s levels. Imputation might be slow. Check that variables are not factor or character by mistake.",
+                        c, unique_levels))
+    }
+  }
+
   # perform initialization (mean/mode imputation)
   if (initialization == "custom") {
     ximp <- x_init
