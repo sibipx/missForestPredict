@@ -120,13 +120,23 @@ missForest <- function(xmis,
     var_init <- x_init
 
     # make all integer columns double (imputed values might not be integer)
-    ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+    integer_columns <- colnames(ximp)[unlist(lapply(ximp, is.integer))]
+    if (length(integer_columns) > 0) {
+      ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+      message(sprintf("Integer columns will be returned as double after imputation: %s",
+                      paste(integer_columns, collapse = ", ")))
+    }
 
   } else {
     ximp <- xmis
 
     # make all integer columns double (imputed values might not be integer)
-    ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+    integer_columns <- colnames(ximp)[unlist(lapply(ximp, is.integer))]
+    if (length(integer_columns) > 0) {
+      ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+      message(sprintf("Integer columns will be returned as double after imputation: %s",
+                      paste(integer_columns, collapse = ", ")))
+    }
 
     var_init <- vector("list", p)
     names(var_init) <- col_names
