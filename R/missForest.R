@@ -233,7 +233,13 @@ missForest <- function(xmis,
           err_NMSE[iter, col] <- 0
         }
         # save the OOB error (MSE)
-        err_MSE[iter, col] <- mse(RF$predictions, ximp[obsi, col, drop = TRUE])
+        oob_i <- !is.na(RF$predictions)
+        if (sum(oob_i) != length(RF$predictions)){
+          warning(sprintf("For variable %s there are %s observations out of %s for which the OOB error cannot be evaluated. These observations are excluded. Consider increasing the number of trees (num.trees) to ensure reliable results",
+                          col, dim(RF$predictions)[[1]] - sum(oob_i), dim(RF$predictions)[[1]]))
+        }
+
+        err_MSE[iter, col] <- mse(RF$predictions[oob_i], obsY[oob_i])
 
       } else {
         obsY <- factor(obsY, levels = unique(ximp[, col, drop = TRUE]))
@@ -260,12 +266,20 @@ missForest <- function(xmis,
         # drop levels if they don't exist
         ximp_binary <- make_binary(factor(ximp[, col, drop = TRUE], levels = unique(ximp[, col, drop = TRUE])))
         col_order <- colnames(ximp_binary)
+        obsY_binary <- ximp_binary[obsi, , drop = FALSE]
+
+        # predictions can be NaN when some observations are never out-of-bag
+        oob_i <- !apply(is.na(RF$predictions), 1, any)
+        if (sum(oob_i) != dim(RF$predictions)[[1]]){
+          warning(sprintf("For variable %s there are %s observations out of %s for which the OOB error cannot be evaluated. These observations are excluded. Consider increasing the number of trees (num.trees) to ensure reliable results",
+                          col, dim(RF$predictions)[[1]] - sum(oob_i), dim(RF$predictions)[[1]]))
+        }
 
         # save OOB error (NMSE)
-        err_NMSE[iter, col] <- BSnorm(RF$predictions[,col_order], ximp_binary[obsi, , drop = FALSE])
+        err_NMSE[iter, col] <- BSnorm(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE])
         # save OOB error (MSE = Brier score divided by number of categories)
-        err_MSE[iter, col] <- BS(RF$predictions[,col_order], ximp_binary[obsi, , drop = FALSE]) /
-          ncol(ximp_binary[obsi, , drop = FALSE])
+        err_MSE[iter, col] <- BS(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE]) /
+          ncol(obsY_binary[oob_i, , drop = FALSE])
       }
     }
 
