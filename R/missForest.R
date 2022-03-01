@@ -227,7 +227,11 @@ missForest <- function(xmis,
         }
 
         # save the OOB error for convergence (NMSE)
-        err_NMSE[iter, col] <- RF$prediction.error / var(ximp[obsi, col])
+        if (var(ximp[obsi, col]) != 0){ # contsant columns have 0 variance
+          err_NMSE[iter, col] <- RF$prediction.error / var(ximp[obsi, col])
+        } else {
+          err_NMSE[iter, col] <- 0
+        }
         # save the OOB error (MSE)
         err_MSE[iter, col] <- mse(RF$predictions, ximp[obsi, col, drop = TRUE])
 
