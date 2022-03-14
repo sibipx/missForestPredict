@@ -13,6 +13,7 @@ missForest(
   initialization = "median/mode",
   x_init = NULL,
   class.weights = NULL,
+  return_integer_as_integer = FALSE,
   verbose = TRUE,
   ...
 )
@@ -38,6 +39,11 @@ By default the weights are set to the proportion of missing values on each varia
 The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
 will be used as arguments for ranger.}
 
+\item{return_integer_as_integer}{Internally, integer columns are treated as double (double precision floating point numbers).
+If TRUE, the imputations will be rounded to closest integer and returned as integer (This might be desirable for count variables).
+If FALSE, integer columns will be returned as double (This might be desirable, for example, for patient age imputation).
+Default is FALSE. The same behaviour will be applied to new observations when using missForestPredict.}
+
 \item{verbose}{(boolean) if TRUE then missForest returns error estimates and runtime}
 
 \item{...}{other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)}
@@ -50,6 +56,8 @@ Object of class \code{missForest} with elements
     \item{\code{impute_sequence}}{vector variable names in the order in which imputation has been run}
     \item{\code{maxiter}}{maxiter parameter as passed to the function}
     \item{\code{models}}{list of random forest models for each iteration}
+    \item{\code{return_integer_as_integer}}{Parameter return_integer_as_integer as passed to the function}
+    \item{\code{integer_columns}}{list of columns of integer type in the data}
     \item{\code{err_MSE}}{dataframe with MSE (mean square error) values for each iteration and each variable}
     \item{\code{err_NMSE}}{dataframe with NMSE (normalized mean square error) values for each iteration and each variable}
 }

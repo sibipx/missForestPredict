@@ -15,5 +15,6 @@ produce_NA(x, proportion = 0.1)
 dataframe with missing values
 }
 \description{
-Produces a dataframe with missing values
+Produces a dataframe with missing values.
+For each variable, a random sample of observations of size \code{proportion * nrow(x)} will be set to NA.
 }

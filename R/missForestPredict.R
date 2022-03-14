@@ -50,16 +50,24 @@ missForestPredict <- function(missForestObj, newdata, x_init = NULL){
   # initialize
   if (missForestObj$initialization != "custom") {
     ximp <- newdata
-    # make all integer columns double (imputed values might not be integer)
-    ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+
+    if (length(missForestObj$integer_columns) > 0) {
+      # make all integer columns double (imputed values might not be integer)
+      ximp[missForestObj$integer_columns] <- lapply(ximp[, missForestObj$integer_columns, drop = FALSE],
+                                                    as.double)
+    }
 
     for (c in names(missForestObj$init)){
       ximp[is.na(ximp[,c, drop = TRUE]),c] <- missForestObj$init[[c]]
     }
   } else {
     ximp <- x_init
-    # make all integer columns double (imputed values might not be integer)
-    ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
+
+    if (length(missForestObj$integer_columns) > 0) {
+      # make all integer columns double (imputed values might not be integer)
+      ximp[missForestObj$integer_columns] <- lapply(ximp[, missForestObj$integer_columns, drop = FALSE],
+                                                    as.double)
+    }
   }
 
   # check that initialization is complete
@@ -94,6 +102,12 @@ missForestPredict <- function(missForestObj, newdata, x_init = NULL){
         }
       }
     }
+  }
+
+  if (missForestObj$return_integer_as_integer &
+      length(missForestObj$integer_columns) > 0) {
+    ximp[, missForestObj$integer_columns] <- lapply(ximp[, missForestObj$integer_columns, drop = FALSE],
+                                                    function(x) as.integer(round(x)))
   }
 
   return(ximp)

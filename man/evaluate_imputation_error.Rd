@@ -20,4 +20,6 @@ dataframe with variables in rows and performance measures in columns
 }
 \description{
 Evaluate the imputation error when true values are known. Useful when missing values are simulated.
+For continous variables, MSE (mean square error) and NMSE (normalized mean sqaure error) are returned.
+For categorical variables, MER (misclassification error rate) is returned. TODO: add in details formulas
 }

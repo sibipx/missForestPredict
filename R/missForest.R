@@ -15,6 +15,10 @@
 #' @param class.weights a list of size \code{ncol(xmis)} containing \code{class.weights} parameter to be passed to ranger.
 #' The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
 #' will be used as arguments for ranger.
+#' @param return_integer_as_integer Internally, integer columns are treated as double (double precision floating point numbers).
+#' If TRUE, the imputations will be rounded to closest integer and returned as integer (This might be desirable for count variables).
+#' If FALSE, integer columns will be returned as double (This might be desirable, for example, for patient age imputation).
+#' Default is FALSE. The same behaviour will be applied to new observations when using missForestPredict.
 #' @param verbose (boolean) if TRUE then missForest returns error estimates and runtime
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)
 #'
@@ -25,6 +29,8 @@
 #'     \item{\code{impute_sequence}}{vector variable names in the order in which imputation has been run}
 #'     \item{\code{maxiter}}{maxiter parameter as passed to the function}
 #'     \item{\code{models}}{list of random forest models for each iteration}
+#'     \item{\code{return_integer_as_integer}}{Parameter return_integer_as_integer as passed to the function}
+#'     \item{\code{integer_columns}}{list of columns of integer type in the data}
 #'     \item{\code{err_MSE}}{dataframe with MSE (mean square error) values for each iteration and each variable}
 #'     \item{\code{err_NMSE}}{dataframe with NMSE (normalized mean square error) values for each iteration and each variable}
 #'
@@ -43,6 +49,7 @@ missForest <- function(xmis,
                        initialization = "median/mode",
                        x_init = NULL,
                        class.weights = NULL,
+                       return_integer_as_integer = FALSE,
                        verbose = TRUE,
                        ...){
 
@@ -122,9 +129,7 @@ missForest <- function(xmis,
     # make all integer columns double (imputed values might not be integer)
     integer_columns <- colnames(ximp)[unlist(lapply(ximp, is.integer))]
     if (length(integer_columns) > 0) {
-      ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
-      message(sprintf("Integer columns will be returned as double after imputation: %s",
-                      paste(integer_columns, collapse = ", ")))
+      ximp[, integer_columns] <- lapply(ximp[, integer_columns, drop = FALSE], as.double)
     }
 
   } else {
@@ -133,9 +138,7 @@ missForest <- function(xmis,
     # make all integer columns double (imputed values might not be integer)
     integer_columns <- colnames(ximp)[unlist(lapply(ximp, is.integer))]
     if (length(integer_columns) > 0) {
-      ximp[unlist(lapply(ximp, is.integer))] <- sapply(ximp[unlist(lapply(ximp, is.integer))],as.double)
-      message(sprintf("Integer columns will be returned as double after imputation: %s",
-                      paste(integer_columns, collapse = ", ")))
+      ximp[, integer_columns] <- lapply(ximp[, integer_columns, drop = FALSE], as.double)
     }
 
     var_init <- vector("list", p)
@@ -308,6 +311,14 @@ missForest <- function(xmis,
 
   } # end while
 
+  # return integer columns as integer
+  if (return_integer_as_integer & length(integer_columns) > 0) {
+    ximp[, integer_columns] <- lapply(ximp[, integer_columns, drop = FALSE],
+                                                    function(x) as.integer(round(x)))
+    ximp_old[, integer_columns] <- lapply(ximp_old[, integer_columns, drop = FALSE],
+                                          function(x) as.integer(round(x)))
+  }
+
   # output
   if (iter != maxiter) ximp <- ximp_old
 
@@ -317,6 +328,8 @@ missForest <- function(xmis,
               impute_sequence = impute_sequence,
               maxiter = maxiter,
               models = models,
+              return_integer_as_integer = return_integer_as_integer,
+              integer_columns = integer_columns,
               err_MSE = err_MSE,
               err_NMSE = err_NMSE)
 
