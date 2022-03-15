@@ -164,7 +164,6 @@ iris_train_init$Petal.Length[is.na(iris_train_init$Petal.Length)] <-
 # impute the training set using this initialization
 set.seed(2022)
 iris_train_imp_obj <- missForest(iris_train_miss, 
-                                 OOB_weights = c(1,1,1,0,0),
                                  initialization = "custom", 
                                  x_init = iris_train_init)
 
