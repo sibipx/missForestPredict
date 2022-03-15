@@ -3,24 +3,46 @@
 #' Imputes a dataframe and returns imputation models to be used on new observations.
 #' Models are built for each variable in the dataframe (even if there are no missing values).
 #'
-#' @param xmis dataframe containing missing values
+#' An adaptation of the original missForest algorithm (Stekhoven et al. 2012) is used.
+#' Variables are initialized with a mean/mode, median/mode or custom imputation.
+#' Then, they are imputed iteratively "on the fly" for a maximum number of iterations or until the convergence criteria are met.
+#' The imputation sequence is either increasing or decreasing.
+#' At each iteration, a random forest model is build for each variable using as outcome on the observed (non-missing) values
+#' of the variable and as predictors the values of the other variables from previous iteration
+#' for the first variable in the sequence or current iteration for next variables in the sequence
+#' (on-the-fly). The ranger package (Wright et al. 2017) is used for building the random forest models.
+#'
+#' The convergence criteria is based on the out-of-boostrap (OOB) error and uses NMSE (normalized mean squared error)
+#' for both continuous and categorical variables.
+#'
+#' Imputation models for all variables and all iterations are saved and can be later
+#' applied to new observations.
+#'
+#' Both dataframe and tibble (tbl_df class) are supported as input. The imputed matrix will be retured with the same class.
+#' Numeric and integer columns are supported and treated internally as continuous variables.
+#' Factor and character columns are supported and treated internally as categorical variables.
+#' Other types (like boolean or dates) are not supported.
+#' NA values are considered missing values.
+#'
+#' @param xmis dataframe containing missing values of class dataframe ("tibble" class tbl_df is also supported). Matrix format is not supported. See details for column format.
 #' @param maxiter maximum number of iterations
 #' @param OOB_weights vector of weights for each variable in the convergence criteria.
 #' By default the weights are set to the proportion of missing values on each variable.
-#' @param decreasing (boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values
+#' @param decreasing (boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values.
 #' (the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.
-#' @param force TODO: this is used by me for comparison tests; will be removed at the end
-#' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom
-#' @param x_init if \code{initialization = custom}; a complete dataframe to be used as initialization (see vignette for example)
+#' @param force TODO: this is used by me for comparison tests; will be removed at the end.
+#' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom.
+#' @param x_init if \code{initialization = custom}; a complete dataframe to be used as initialization (see vignette for example).
 #' @param class.weights a list of size \code{ncol(xmis)} containing \code{class.weights} parameter to be passed to ranger.
-#' The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
-#' will be used as arguments for ranger.
+#' The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables.
+#' will be used as arguments for ranger. (See \code{ranger} function documentation in \code{ranger} package for details).
 #' @param return_integer_as_integer Internally, integer columns are treated as double (double precision floating point numbers).
 #' If TRUE, the imputations will be rounded to closest integer and returned as integer (This might be desirable for count variables).
 #' If FALSE, integer columns will be returned as double (This might be desirable, for example, for patient age imputation).
 #' Default is FALSE. The same behaviour will be applied to new observations when using missForestPredict.
-#' @param verbose (boolean) if TRUE then missForest returns error estimates and runtime
-#' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported)
+#' @param verbose (boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.
+#' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported).
+#' See vignette for \code{num.trees} example.
 #'
 #' @return Object of class \code{missForest} with elements
 #'     \item{\code{ximp}}{dataframe with imputed values}
@@ -39,6 +61,8 @@
 #' iris_mis <- produce_NA(iris, proportion = 0.1)
 #' imputation_object <- missForest(iris_mis)
 #' iris_imp <- imputation_object$ximp
+#'
+#' @import ranger
 #' @export
 
 missForest <- function(xmis,

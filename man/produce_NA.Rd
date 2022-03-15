@@ -9,10 +9,11 @@ produce_NA(x, proportion = 0.1)
 \arguments{
 \item{x}{a dataframe}
 
-\item{proportion}{proportion of missing values to be produced; a vector of size \code{ncol(x)} or a single value to be applied to all variables in the dataframe}
+\item{proportion}{proportion of missing values to be produced; a vector of size \code{ncol(x)}
+or a single value to be applied to all variables in the dataframe.}
 }
 \value{
-dataframe with missing values
+dataframe with missing values.
 }
 \description{
 Produces a dataframe with missing values.

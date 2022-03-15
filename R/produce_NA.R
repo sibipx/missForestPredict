@@ -4,9 +4,10 @@
 #' For each variable, a random sample of observations of size \code{proportion * nrow(x)} will be set to NA.
 #'
 #' @param x a dataframe
-#' @param proportion proportion of missing values to be produced; a vector of size \code{ncol(x)} or a single value to be applied to all variables in the dataframe
+#' @param proportion proportion of missing values to be produced; a vector of size \code{ncol(x)}
+#' or a single value to be applied to all variables in the dataframe.
 #'
-#' @return dataframe with missing values
+#' @return dataframe with missing values.
 #' @export
 
 produce_NA <- function(x, proportion = 0.1){

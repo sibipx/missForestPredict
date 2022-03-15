@@ -7,17 +7,26 @@
 missForestPredict(missForestObj, newdata, x_init = NULL)
 }
 \arguments{
-\item{missForestObj}{missForest object as returned by the missForest function}
+\item{missForestObj}{missForest object as returned by the missForest function.}
 
 \item{newdata}{new data to impute. The column names should be the same as in the imputation model.}
 
-\item{x_init}{initialization dataframe in case custom initialization mode has been used}
+\item{x_init}{initialization dataframe in case custom initialization mode has been used.
+It needs to be complete dataframe (with no missing values). See vignette for a full example.}
 }
 \value{
 an imputed dataframe
 }
 \description{
 Imputes a new dataframe based on the missForest models. The same number of iterations as in missForest are used.
+}
+\details{
+A new observation is initialized in the same manner as passed through the \code{initialization}
+parameter passed to the \code{missForest} function. Then, variables are imputed in the same sequence and for the same
+number of iterations using the random models saved for each iteration. This ensures that a new observation is
+imputed in the same manner as the training set (imputed by the function \code{missForest}).
+Re-imputing the training set with the \code{missForestPredict} will yield the same result as
+the original imputation returned by the \code{missForest} function.
 }
 \examples{
 data(iris)
@@ -36,4 +45,5 @@ iris_train_imp_obj <- missForest(iris_train_miss)
 # impute test
 iris_test_imp_new <- missForestPredict(iris_train_imp_obj, newdata = iris_test_miss)
 head(iris_test_imp_new)
+
 }

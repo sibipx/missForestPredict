@@ -69,7 +69,7 @@ Post imputation, the error can be checked using the `evaluate_imputation_error` 
 
 ## Data used for demonstration
 
-**Iris data** The iris dataset contains in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers [@anderson1935irises].
+**Iris data** The iris dataset in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers [@anderson1935irises].
 
 **Diamonds data** The diamonds dataset from `ggplot2` R package contains seven continuous variables and three categorical variables for N = 53940 diamonds [@ggplot2].
 

@@ -35,7 +35,7 @@ The imputation algorithm is based on random forests [@breiman01] as implemented 
 
 **Saved models and initialization**
 
-The missing data in each column is initialized the median/mode (or mean/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criteria is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for all variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. Imputation initialization and models are "learned" also for variables with no missing values in the original (training) data. This allows for unfortunate situations in which new observations have different missing patterns than the one encountered in the training data (for example, because of accidental registration errors or because of unfortunate train / test split in which all missing values of a variable with low missingness fall in the test set).
+The missing data in each column is initialized the median/mode (or mean/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criterion is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for all variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. Imputation initialization and models are "learned" also for variables with no missing values in the original (training) data. This allows for unfortunate situations in which new observations have different missing patterns than the one encountered in the training data (for example, because of accidental registration errors or because of unfortunate train / test split in which all missing values of a variable with low missingness fall in the test set).
 
 **Imputation of new observations**
 
@@ -71,7 +71,7 @@ devtools::install_git('https://gitlab.kuleuven.be/u0143313/missforestpredict/', 
 
 ## Data used for demonstration
 
-**Iris data** The iris dataset contains in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers [@anderson1935irises].
+**Iris data** The iris dataset in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers [@anderson1935irises].
 
 **Diamonds data** The diamonds dataset from `ggplot2` R package contains seven continuous variables and three categorical variables for N = 53940 diamonds [@ggplot2].
 
@@ -316,7 +316,7 @@ evaluate_imputation_error(iris_test_init, iris_test_miss, iris_test)
 
 ```
 
-Note that we chose to set the `OOB_weights` parameter so that the errors of the last 2 variables are not taken into account when calculating the convergence criteria. 
+The errors (MSE, NMSE) for x and y decreased. The missclasification error (MER) is 0 in both cases??? Note that we chose to set the `OOB_weights` parameter so that the errors of the last 2 variables are not taken into account when calculating the convergence criteria. 
 
 Also keep in mind that `x_init` should be complete dataframe, if used. For example, if you would wish to impute only one variable using a different method as initialization, you cannot rely on the `missForest` function to do median/mode initialization for the other variables. You would have to do it yourself before providing `x_init`.
 
