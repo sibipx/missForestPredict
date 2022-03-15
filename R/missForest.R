@@ -325,10 +325,14 @@ missForest <- function(xmis,
     # return error monitoring
     if (verbose){
       delta_start <- proc.time() - t_start
-      cat(sprintf("    OOB errors MSE:             %s\n", paste(err_MSE[iter,], collapse = ", ")))
-      cat(sprintf("    OOB errors NMSE:            %s\n", paste(err_NMSE[iter,], collapse = ", ")))
-      cat(sprintf("    (weigthed) difference NMSE: %s\n", paste(NMSE_err_old - NMSE_err_new, collapse = ", ")))
-      cat(sprintf("    time:                       %s seconds\n\n", delta_start[3]))
+      cat(sprintf("    OOB errors MSE:             %s\n",
+                  paste(round(err_MSE[iter,], 10), collapse = ", ")))
+      cat(sprintf("    OOB errors NMSE:            %s\n",
+                  paste(round(err_NMSE[iter,], 10), collapse = ", ")))
+      cat(sprintf("    (weigthed) difference NMSE: %s\n",
+                  paste(round(NMSE_err_old - NMSE_err_new, 10), collapse = ", ")))
+      cat(sprintf("    time:                       %s seconds\n\n",
+                  round(delta_start[3], 10)))
     }
 
     iter <- iter + 1
