@@ -141,25 +141,25 @@ iris_test <- iris[id_test,]
 
 # produce missing values
 set.seed(2022)
-iris_train_miss <- produce_NA(iris_train, proportion = c(0.2, 0.2, 0.2, 0, 0))
-iris_test_miss <- produce_NA(iris_test, proportion = c(0.2, 0.2, 0.2, 0, 0))
+iris_train_miss <- produce_NA(iris_train, proportion = c(0.2, 0, 0.2, 0.2, 0))
+iris_test_miss <- produce_NA(iris_test, proportion = c(0.2, 0, 0.2, 0.2, 0))
 
-# build linear models for Sepal.Length, Sepal.Width, Petal.Length using complete cases for each variable
+# build linear models for Sepal.Length, Petal.Width, Petal.Length using complete cases for each variable
 fit_1 <- lm(Sepal.Length ~ ., data = iris_train_miss[!is.na(iris_train_miss$Sepal.Length), 
-                                                     c("Sepal.Length", "Petal.Width", "Species")])
-fit_2 <- lm(Sepal.Width ~ ., data = iris_train_miss[!is.na(iris_train_miss$Sepal.Width), 
-                                                    c("Sepal.Width", "Petal.Width", "Species")])
+                                                     c("Sepal.Length", "Sepal.Width", "Species")])
+fit_2 <- lm(Petal.Width ~ ., data = iris_train_miss[!is.na(iris_train_miss$Petal.Width), 
+                                                    c("Petal.Width", "Sepal.Width", "Species")])
 fit_3 <- lm(Petal.Length ~ ., data = iris_train_miss[!is.na(iris_train_miss$Petal.Length), 
-                                                     c("Petal.Length", "Petal.Width", "Species")])
+                                                     c("Petal.Length", "Sepal.Width", "Species")])
 
 # impute training with predictions of linear model
 iris_train_init <- iris_train_miss
 iris_train_init$Sepal.Length[is.na(iris_train_init$Sepal.Length)] <- 
-  predict(fit_1, iris_train_init[is.na(iris_train_init$Sepal.Length), c("Petal.Width", "Species")])
-iris_train_init$Sepal.Width[is.na(iris_train_init$Sepal.Width)] <- 
-  predict(fit_2, iris_train_init[is.na(iris_train_init$Sepal.Width), c("Petal.Width", "Species")])
+  predict(fit_1, iris_train_init[is.na(iris_train_init$Sepal.Length), c("Sepal.Width", "Species")])
+iris_train_init$Petal.Width[is.na(iris_train_init$Petal.Width)] <- 
+  predict(fit_2, iris_train_init[is.na(iris_train_init$Petal.Width), c("Sepal.Width", "Species")])
 iris_train_init$Petal.Length[is.na(iris_train_init$Petal.Length)] <- 
-  predict(fit_3, iris_train_init[is.na(iris_train_init$Petal.Length), c("Petal.Width", "Species")])
+  predict(fit_3, iris_train_init[is.na(iris_train_init$Petal.Length), c("Sepal.Width", "Species")])
 
 # impute the training set using this initialization
 set.seed(2022)
@@ -170,11 +170,11 @@ iris_train_imp_obj <- missForest(iris_train_miss,
 # build test set initialization using the linear models learned on training
 iris_test_init <- iris_test_miss
 iris_test_init$Sepal.Length[is.na(iris_test_init$Sepal.Length)] <- 
-  predict(fit_1, iris_test_init[is.na(iris_test_init$Sepal.Length), c("Petal.Width", "Species")])
-iris_test_init$Sepal.Width[is.na(iris_test_init$Sepal.Width)] <- 
-  predict(fit_2, iris_test_init[is.na(iris_test_init$Sepal.Width), c("Petal.Width", "Species")])
+  predict(fit_1, iris_test_init[is.na(iris_test_init$Sepal.Length), c("Sepal.Width", "Species")])
+iris_test_init$Petal.Width[is.na(iris_test_init$Petal.Width)] <- 
+  predict(fit_2, iris_test_init[is.na(iris_test_init$Petal.Width), c("Sepal.Width", "Species")])
 iris_test_init$Petal.Length[is.na(iris_test_init$Petal.Length)] <- 
-  predict(fit_3, iris_test_init[is.na(iris_test_init$Petal.Length), c("Petal.Width", "Species")])
+  predict(fit_3, iris_test_init[is.na(iris_test_init$Petal.Length), c("Sepal.Width", "Species")])
 
 # impute test set
 iris_test_imp <- missForestPredict(iris_train_imp_obj, newdata = iris_test_miss, 

@@ -12,13 +12,13 @@
 #' for the first variable in the sequence or current iteration for next variables in the sequence
 #' (on-the-fly). The ranger package (Wright et al. 2017) is used for building the random forest models.
 #'
-#' The convergence criteria is based on the out-of-boostrap (OOB) error and uses NMSE (normalized mean squared error)
+#' The convergence criterion is based on the out-of-boostrap (OOB) error and uses NMSE (normalized mean squared error)
 #' for both continuous and categorical variables.
 #'
 #' Imputation models for all variables and all iterations are saved and can be later
 #' applied to new observations.
 #'
-#' Both dataframe and tibble (tbl_df class) are supported as input. The imputed matrix will be retured with the same class.
+#' Both dataframe and tibble (tbl_df class) are supported as input. The imputed dataframe will be retured with the same class.
 #' Numeric and integer columns are supported and treated internally as continuous variables.
 #' Factor and character columns are supported and treated internally as categorical variables.
 #' Other types (like boolean or dates) are not supported.
@@ -34,7 +34,7 @@
 #' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom.
 #' @param x_init if \code{initialization = custom}; a complete dataframe to be used as initialization (see vignette for example).
 #' @param class.weights a list of size \code{ncol(xmis)} containing \code{class.weights} parameter to be passed to ranger.
-#' The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables.
+#' The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
 #' will be used as arguments for ranger. (See \code{ranger} function documentation in \code{ranger} package for details).
 #' @param return_integer_as_integer Internally, integer columns are treated as double (double precision floating point numbers).
 #' If TRUE, the imputations will be rounded to closest integer and returned as integer (This might be desirable for count variables).
@@ -55,7 +55,11 @@
 #'     \item{\code{integer_columns}}{list of columns of integer type in the data}
 #'     \item{\code{err_MSE}}{dataframe with MSE (mean square error) values for each iteration and each variable}
 #'     \item{\code{err_NMSE}}{dataframe with NMSE (normalized mean square error) values for each iteration and each variable}
-#'
+#' @references
+#' \itemize{
+#'     \item Stekhoven, D. J., & Bühlmann, P. (2012). MissForest-non-parametric missing value imputation for mixed-type data. Bioinformatics, 28(1), 112-118. \doi{10.1093/bioinformatics/btr597}
+#'     \item Wright, M. N. & Ziegler, A. (2017). ranger: A fast implementation of random forests for high dimensional data in C++ and R. J Stat Softw 77:1-17. \doi{10.18637/jss.v077.i01}.
+#'   }
 #' @examples
 #' data(iris)
 #' iris_mis <- produce_NA(iris, proportion = 0.1)

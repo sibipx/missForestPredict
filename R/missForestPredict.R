@@ -3,7 +3,7 @@
 #' Imputes a new dataframe based on the missForest models. The same number of iterations as in missForest are used.
 #'
 #' A new observation is initialized in the same manner as passed through the \code{initialization}
-#' parameter passed to the \code{missForest} function. Then, variables are imputed in the same sequence and for the same
+#' parameter to the \code{missForest} function. Then, variables are imputed in the same sequence and for the same
 #' number of iterations using the random models saved for each iteration. This ensures that a new observation is
 #' imputed in the same manner as the training set (imputed by the function \code{missForest}).
 #' Re-imputing the training set with the \code{missForestPredict} will yield the same result as
