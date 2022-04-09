@@ -270,3 +270,46 @@ test_that("integer is returned as integer when return_integer_as_integer is TRUE
 
 })
 
+test_that("re-imputing with missForestPredict gives the same results as missForest", {
+
+  require(tidyverse)
+
+  data(iris)
+  iris_miss <- produce_NA(iris, proportion = 0.1)
+  iris_miss_tbl <- as_tibble(iris_miss)
+
+  missForest_object <- missForestPredict::missForest(iris_miss, verbose = FALSE)
+  missForest_object_tbl <- missForestPredict::missForest(iris_miss_tbl, verbose = FALSE)
+  # re-impute
+  iris_miss_imp <- missForestPredict::missForestPredict(missForest_object,
+                                                        newdata = iris_miss)
+  iris_miss_imp_tbl <- missForestPredict::missForestPredict(missForest_object_tbl,
+                                                        newdata = iris_miss_tbl)
+
+  expect_equal(missForest_object$ximp, iris_miss_imp)
+  expect_equal(missForest_object_tbl$ximp, iris_miss_imp_tbl)
+
+})
+
+test_that("re-imputing with missForestPredict gives the same results as missForest - 1 iteration", {
+
+  require(tidyverse)
+
+  data(iris)
+  iris_miss <- produce_NA(iris, proportion = 0.1)
+  iris_miss_tbl <- as_tibble(iris_miss)
+
+  missForest_object <- missForestPredict::missForest(iris_miss, verbose = FALSE,
+                                                     maxiter = 1)
+  missForest_object_tbl <- missForestPredict::missForest(iris_miss_tbl, verbose = FALSE,
+                                                         maxiter = 1)
+  # re-impute
+  iris_miss_imp <- missForestPredict::missForestPredict(missForest_object,
+                                                        newdata = iris_miss)
+  iris_miss_imp_tbl <- missForestPredict::missForestPredict(missForest_object_tbl,
+                                                            newdata = iris_miss_tbl)
+
+  expect_equal(missForest_object$ximp, iris_miss_imp)
+  expect_equal(missForest_object_tbl$ximp, iris_miss_imp_tbl)
+
+})

@@ -352,7 +352,7 @@ missForest <- function(xmis,
   }
 
   # output
-  if (iter != maxiter) ximp <- ximp_old
+  if (iter != maxiter & !convergence_criteria) ximp <- ximp_old
 
   out <- list(ximp = ximp,
               init = var_init,
