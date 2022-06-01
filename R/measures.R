@@ -57,6 +57,21 @@ nmse <- function (preds, y) {
   mse(preds, y) / mean((y-m)^2)
 }
 
+#' Normalized Root Mean Square Error - NRMSE
+#'
+#' @param ximp dataframe with imputed values
+#' @param xmis original dataframe with missing values
+#' @param xtrue original complete dataframe
+#'
+#' @return Normalized Root Mean Square Error - NMSE
+#' @keywords internal
+#' @noRd
+
+nrmse <- function(ximp, xmis, xtrue){
+  mis <- is.na(xmis)
+  sqrt(mean((ximp[mis] - xtrue[mis])^{2}) / var(xtrue[mis]))
+}
+
 #' Missclassification error rate - ER
 #'
 #' @param prediction matrix of class predictions for each class (classes in columns, observations in rows)
