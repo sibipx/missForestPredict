@@ -31,7 +31,7 @@
 #' @param decreasing (boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values.
 #' (the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.
 #' @param force TODO: this is used by me for comparison tests; will be removed at the end.
-#' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom.
+#' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom. Default is mean/mode.
 #' @param x_init if \code{initialization = custom}; a complete dataframe to be used as initialization (see vignette for example).
 #' @param class.weights a list of size \code{ncol(xmis)} containing \code{class.weights} parameter to be passed to ranger.
 #' The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
@@ -74,7 +74,7 @@ missForest <- function(xmis,
                        OOB_weights = NULL,
                        decreasing = FALSE,
                        force = FALSE,
-                       initialization = "median/mode",
+                       initialization = "mean/mode",
                        x_init = NULL,
                        class.weights = NULL,
                        return_integer_as_integer = FALSE,
