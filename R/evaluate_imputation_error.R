@@ -19,9 +19,9 @@
 
 evaluate_imputation_error <- function(ximp, xmis, xtrue, all = FALSE){
 
-  col_names <- colnames(xtrue)
-  col_names_ximp <- colnames(ximp)
-  col_names_xmis <- colnames(xmis)
+  col_names <- sort(colnames(xtrue))
+  col_names_ximp <- sort(colnames(ximp))
+  col_names_xmis <- sort(colnames(xmis))
 
   if (!all(sapply(list(col_names_ximp, col_names_xmis), FUN = identical, col_names)))
     stop("Columns of the 3 dataframes should be identical")
