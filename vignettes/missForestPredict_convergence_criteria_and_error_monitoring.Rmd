@@ -35,9 +35,11 @@ The normalized mean square error (NMSE) is used for both continuous and categori
 
 $NMSE = \frac{\sum_{i=1}^{N}(x_i - \hat{x_i})^2}{\sum_{i=1}^{N} (x_i - \bar{x})^2} = 1 - R^2$, $i = 1, 2, ... N$
 
+${x_i}$ = the true value of variable x for observation i
+
 $\bar{x}$ = the mean value of variable x
 
-$\hat{x_i}$ = prediction (imputation) for observation i 
+$\hat{x_i}$ = prediction (imputation) of variable x for observation i 
 
 $N$ = number of observations
 
@@ -48,6 +50,8 @@ $NMSE = \frac{BS}{BSref} = 1 - BSS$
 $BS =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{ij} - x_{ij})^2$, $i = 1, 2, ... N$, $j = 1, 2, ... R$
 
 $BSref =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{j} - x_{ij})^2=1-\sum_{j=1}^{R}p_j^2$
+
+${x_{ij}}$ = the true value of variable x for observation i and class j (1 if observation i has class j and 0 otherwise)
 
 $p_{ij}$ = prediction (probability) for observation i and class j
 
