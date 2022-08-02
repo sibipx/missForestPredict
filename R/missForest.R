@@ -40,6 +40,8 @@
 #' If TRUE, the imputations will be rounded to closest integer and returned as integer (This might be desirable for count variables).
 #' If FALSE, integer columns will be returned as double (This might be desirable, for example, for patient age imputation).
 #' Default is FALSE. The same behaviour will be applied to new observations when using missForestPredict.
+#' @param save_models if TRUE, imputation models are saved and a new observation (or a test set) can be imputed using the models learned;
+#' saving models on a dataset with a high number of variables will occupy RAM memory on the machine
 #' @param verbose (boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported).
 #' See vignette for \code{num.trees} example.
@@ -78,6 +80,7 @@ missForest <- function(xmis,
                        x_init = NULL,
                        class.weights = NULL,
                        return_integer_as_integer = FALSE,
+                       save_models = FALSE,
                        verbose = TRUE,
                        ...){
 
@@ -152,7 +155,7 @@ missForest <- function(xmis,
   # perform initialization (mean/mode imputation)
   if (initialization == "custom") {
     ximp <- x_init
-    var_init <- x_init
+    if (save_models) var_init <- x_init
 
     # make all integer columns double (imputed values might not be integer)
     integer_columns <- colnames(ximp)[unlist(lapply(ximp, is.integer))]
@@ -181,7 +184,7 @@ missForest <- function(xmis,
           mean_col <- median(xmis[, col, drop = TRUE], na.rm = TRUE)
         }
 
-        var_init[[col]] <- mean_col
+        if (save_models) var_init[[col]] <- mean_col
 
         # initialize ximp column
         ximp[is.na(xmis[, col, drop = TRUE]), col] <- mean_col
@@ -193,7 +196,7 @@ missForest <- function(xmis,
         # if there are several classes with equal number of samples, sample one at random
         mode_col <- sample(names(which(max_level == summary_col)), 1)
         # keep mode
-        var_init[[col]] <- mode_col
+        if (save_models) var_init[[col]] <- mode_col
 
         # initialize ximp column
         ximp[is.na(xmis[, col, drop = TRUE]),col] <- mode_col
@@ -223,13 +226,13 @@ missForest <- function(xmis,
   colnames(err_NMSE) <- col_names
 
   iter <- 1
-  models <- list()
   convergence_criteria <- TRUE
+  if (save_models) models <- list() else models <- NULL
 
   # iterate RF models
   while (convergence_criteria & iter <= maxiter){
 
-    models[[iter]] <- list()
+    if (save_models) models[[iter]] <- list()
 
     if (verbose) cat("  missForest iteration", iter, "in progress...")
 
@@ -249,7 +252,7 @@ missForest <- function(xmis,
         RF <- ranger(x = obsX, y = obsY, ...)
 
         # save model
-        models[[iter]][[col]] <- RF
+        if (save_models) models[[iter]][[col]] <- RF
 
         # if the column is not complete, impute the missing values
         if (nrow(misX) > 0) {
@@ -281,7 +284,7 @@ missForest <- function(xmis,
                      ...)
 
         # save model
-        models[[iter]][[col]] <- RF
+        if (save_models) models[[iter]][[col]] <- RF
 
         # if the column is not complete, impute the missing values
         if (nrow(misX) > 0) {
@@ -346,7 +349,7 @@ missForest <- function(xmis,
   # return integer columns as integer
   if (return_integer_as_integer & length(integer_columns) > 0) {
     ximp[, integer_columns] <- lapply(ximp[, integer_columns, drop = FALSE],
-                                                    function(x) as.integer(round(x)))
+                                      function(x) as.integer(round(x)))
     ximp_old[, integer_columns] <- lapply(ximp_old[, integer_columns, drop = FALSE],
                                           function(x) as.integer(round(x)))
   }
@@ -359,6 +362,7 @@ missForest <- function(xmis,
               initialization = initialization,
               impute_sequence = impute_sequence,
               maxiter = maxiter,
+              save_models = save_models,
               models = models,
               return_integer_as_integer = return_integer_as_integer,
               integer_columns = integer_columns,

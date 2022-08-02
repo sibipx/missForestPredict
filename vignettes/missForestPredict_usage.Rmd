@@ -111,11 +111,13 @@ head(iris_test_miss)
 
 ```
 
-We will impute the training set and learn the random forest imputation models at the same time using the function `missForest`. By default feedback on the number of iterations and the error monitoring is provided. You can set `verbose = FALSE` to silence this output. More information on error monitoring is provided in a separate vignette.
+We will impute the training set and learn the random forest imputation models at the same time using the function `missForest`. To later use the models learned on a training set for imputation of new observations, `save_models` needs to be set to `TRUE`. 
+
+By default feedback on the number of iterations and the error monitoring is provided. You can set `verbose = FALSE` to silence this output. More information on error monitoring is provided in a separate vignette.
 
 ```{r}
 set.seed(2022)
-iris_train_imp_object <- missForestPredict::missForest(iris_train_miss)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE)
 
 ```
 
@@ -187,7 +189,7 @@ Imputing the training set with the function `missForestPredict` will give the sa
 
 ```{r}
 set.seed(2022)
-iris_train_imp_object <- missForestPredict::missForest(iris_train_miss)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE)
 
 # store imputed dataframe
 iris_train_imp <- iris_train_imp_object$ximp
@@ -233,7 +235,8 @@ The function `missForest` supports additional parameters to be passed to the `ra
 
 ```{r}
 set.seed(2022)
-diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss, 
+diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss,
+                                                           save_models = TRUE,
                                                            num.trees = 100)
 
 # impute test set
@@ -294,6 +297,7 @@ iris_train_init$Petal.Length[is.na(iris_train_init$Petal.Length)] <-
 # impute the training set using this initialization
 set.seed(2022)
 iris_train_imp_obj <- missForest(iris_train_miss, 
+                                 save_models = TRUE,
                                  initialization = "custom", 
                                  x_init = iris_train_init)
 

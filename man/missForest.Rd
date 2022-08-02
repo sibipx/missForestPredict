@@ -10,10 +10,11 @@ missForest(
   OOB_weights = NULL,
   decreasing = FALSE,
   force = FALSE,
-  initialization = "median/mode",
+  initialization = "mean/mode",
   x_init = NULL,
   class.weights = NULL,
   return_integer_as_integer = FALSE,
+  save_models = FALSE,
   verbose = TRUE,
   ...
 )
@@ -31,7 +32,7 @@ By default the weights are set to the proportion of missing values on each varia
 
 \item{force}{TODO: this is used by me for comparison tests; will be removed at the end.}
 
-\item{initialization}{initialization method before running RF models; supported: mean/mode, median/mode and custom.}
+\item{initialization}{initialization method before running RF models; supported: mean/mode, median/mode and custom. Default is mean/mode.}
 
 \item{x_init}{if \code{initialization = custom}; a complete dataframe to be used as initialization (see vignette for example).}
 
@@ -43,6 +44,9 @@ will be used as arguments for ranger. (See \code{ranger} function documentation 
 If TRUE, the imputations will be rounded to closest integer and returned as integer (This might be desirable for count variables).
 If FALSE, integer columns will be returned as double (This might be desirable, for example, for patient age imputation).
 Default is FALSE. The same behaviour will be applied to new observations when using missForestPredict.}
+
+\item{save_models}{if TRUE, imputation models are saved and a new observation (or a test set) can be imputed using the models learned;
+saving models on a dataset with a high number of variables will occupy RAM memory on the machine}
 
 \item{verbose}{(boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.}
 

@@ -15,7 +15,7 @@ test_that("tibble returns tibble", {
   iris_test_tbl <- as_tibble(iris_test, rownames = NA)
 
   set.seed(2022)
-  missForest_object_tbl <- missForestPredict::missForest(iris_train_tbl, verbose = FALSE)
+  missForest_object_tbl <- missForestPredict::missForest(iris_train_tbl, save_models = TRUE, verbose = FALSE)
   iris_test_tbl_imp <- missForestPredict::missForestPredict(missForest_object_tbl, newdata = iris_test_tbl)
 
   expect_is(iris_test_tbl_imp, "tbl_df")
@@ -33,7 +33,7 @@ test_that("dataframe returns dataframe", {
   iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
 
   set.seed(2022)
-  missForest_object_df <- missForestPredict::missForest(iris_train, verbose = FALSE)
+  missForest_object_df <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE)
   iris_test_df_imp <- missForestPredict::missForestPredict(missForest_object_df, newdata = iris_test)
 
   expect_is(iris_test_df_imp, "data.frame")
@@ -50,11 +50,11 @@ test_that("tibble and dataframe results are the same for missForest", {
   iris_mis_tbl <- as_tibble(iris_mis)
 
   set.seed(2022)
-  missForest_object <- missForestPredict::missForest(iris_mis, verbose = FALSE)
+  missForest_object <- missForestPredict::missForest(iris_mis, save_models = TRUE, verbose = FALSE)
   iris_imp_df <- missForest_object$ximp
 
   set.seed(2022)
-  missForest_object_tbl <- missForestPredict::missForest(iris_mis_tbl, verbose = FALSE)
+  missForest_object_tbl <- missForestPredict::missForest(iris_mis_tbl, save_models = TRUE, verbose = FALSE)
   iris_imp_tbl <- missForest_object_tbl$ximp
 
   expect_equal(iris_imp_tbl, as_tibble(iris_imp_df))
@@ -73,11 +73,11 @@ test_that("tibble and dataframe results are the same for missForestPredict", {
   iris_test_tbl <- as_tibble(iris_test, rownames = NA)
 
   set.seed(2022)
-  missForest_object <- missForestPredict::missForest(iris_train, verbose = FALSE)
+  missForest_object <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE)
   iris_test_df_imp <- missForestPredict::missForestPredict(missForest_object, newdata = iris_test)
 
   set.seed(2022)
-  missForest_object_tbl <- missForestPredict::missForest(iris_train_tbl, verbose = FALSE)
+  missForest_object_tbl <- missForestPredict::missForest(iris_train_tbl, save_models = TRUE, verbose = FALSE)
   iris_test_tbl_imp <- missForestPredict::missForestPredict(missForest_object, newdata = iris_test_tbl)
 
   expect_equal(iris_test_tbl_imp, as_tibble(iris_test_df_imp))
@@ -91,7 +91,7 @@ test_that("prediction on training set is the same as imputation on dataframe", {
   iris_mis <- produce_NA(iris, proportion = 0.1)
 
   set.seed(2022)
-  missForest_object <- missForestPredict::missForest(iris_mis, verbose = FALSE)
+  missForest_object <- missForestPredict::missForest(iris_mis, save_models = TRUE, verbose = FALSE)
   iris_imp_df <- missForest_object$ximp
 
   missForest_predictions <- missForestPredict::missForestPredict(missForest_object, newdata = iris_mis)
@@ -108,7 +108,7 @@ test_that("prediction on training set is the same as imputation on tibble", {
   iris_mis <- as_tibble(iris_mis)
 
   set.seed(2022)
-  missForest_object <- missForestPredict::missForest(iris_mis, verbose = FALSE)
+  missForest_object <- missForestPredict::missForest(iris_mis, save_models = TRUE, verbose = FALSE)
   iris_imp_df <- missForest_object$ximp
 
   missForest_predictions <- missForestPredict::missForestPredict(missForest_object, newdata = iris_mis)
@@ -122,7 +122,7 @@ test_that("imputing complete dataframe returns the same dataframe", {
   data(iris)
 
   set.seed(2022)
-  missForest_object <- missForestPredict::missForest(iris, verbose = FALSE)
+  missForest_object <- missForestPredict::missForest(iris, save_models = TRUE, verbose = FALSE)
   iris_imp_df <- missForest_object$ximp
 
   expect_equal(iris_imp_df, iris)
@@ -135,7 +135,7 @@ test_that("imputing complete tibble returns the same tibble", {
 
   set.seed(2022)
   iris <- as_tibble(iris)
-  missForest_object <- missForestPredict::missForest(iris, verbose = FALSE)
+  missForest_object <- missForestPredict::missForest(iris, save_models = TRUE, verbose = FALSE)
   iris_imp_df <- missForest_object$ximp
 
   expect_equal(iris_imp_df, iris)
@@ -149,14 +149,14 @@ test_that("imputation is the same for factor and character", {
   iris <- produce_NA(iris, proportion = 0.2)
 
   set.seed(2022)
-  missForest_object <- missForestPredict::missForest(iris, verbose = FALSE)
+  missForest_object <- missForestPredict::missForest(iris, save_models = TRUE, verbose = FALSE)
   iris_imp_df <- missForest_object$ximp
 
   iris_char <- iris
   iris_char$Species <- as.character(iris_char$Species)
 
   set.seed(2022)
-  missForest_object_char <- missForestPredict::missForest(iris_char, verbose = FALSE)
+  missForest_object_char <- missForestPredict::missForest(iris_char, save_models = TRUE, verbose = FALSE)
   iris_imp_df_char <- missForest_object_char$ximp
 
   iris_imp_df_char$Species <- as.factor(iris_imp_df_char$Species)
@@ -181,14 +181,14 @@ test_that("imputation prediction is the same for factor and character", {
   iris_test_chr$Species <- as.character(iris_test_chr$Species)
 
   set.seed(2022)
-  missForest_object_fct <- missForestPredict::missForest(iris_train, verbose = FALSE)
+  missForest_object_fct <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE)
   set.seed(2022)
   missForest_predictions_fct <- missForestPredict::missForestPredict(missForest_object_fct,
                                                                      newdata = iris_test)
 
 
   set.seed(2022)
-  missForest_object_char <- missForestPredict::missForest(iris_train_chr, verbose = FALSE)
+  missForest_object_char <- missForestPredict::missForest(iris_train_chr, save_models = TRUE, verbose = FALSE)
   set.seed(2022)
   missForest_predictions_char <- missForestPredict::missForestPredict(missForest_object_char,
                                                                       newdata = iris_test_chr)
@@ -218,13 +218,13 @@ test_that("integer is returned as double when return_integer_as_integer is FALSE
 
   # impute train and test df
   set.seed(2022)
-  missForest_object_df <- missForestPredict::missForest(iris_train, verbose = FALSE,
+  missForest_object_df <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE,
                                                          return_integer_as_integer = FALSE)
   iris_test_df_imp <- missForestPredict::missForestPredict(missForest_object_df, newdata = iris_test)
 
   # impute train and test tibble
   set.seed(2022)
-  missForest_object_tbl <- missForestPredict::missForest(iris_train_tbl, verbose = FALSE,
+  missForest_object_tbl <- missForestPredict::missForest(iris_train_tbl, save_models = TRUE, verbose = FALSE,
                                                          return_integer_as_integer = FALSE)
   iris_test_tbl_imp <- missForestPredict::missForestPredict(missForest_object_tbl, newdata = iris_test_tbl)
 
@@ -252,13 +252,13 @@ test_that("integer is returned as integer when return_integer_as_integer is TRUE
 
   # impute train and test df
   set.seed(2022)
-  missForest_object_df <- missForestPredict::missForest(iris_train, verbose = FALSE,
+  missForest_object_df <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE,
                                                         return_integer_as_integer = TRUE)
   iris_test_df_imp <- missForestPredict::missForestPredict(missForest_object_df, newdata = iris_test)
 
   # impute train and test tibble
   set.seed(2022)
-  missForest_object_tbl <- missForestPredict::missForest(iris_train_tbl, verbose = FALSE,
+  missForest_object_tbl <- missForestPredict::missForest(iris_train_tbl, save_models = TRUE, verbose = FALSE,
                                                          return_integer_as_integer = TRUE)
   iris_test_tbl_imp <- missForestPredict::missForestPredict(missForest_object_tbl, newdata = iris_test_tbl)
 
@@ -278,8 +278,8 @@ test_that("re-imputing with missForestPredict gives the same results as missFore
   iris_miss <- produce_NA(iris, proportion = 0.1)
   iris_miss_tbl <- as_tibble(iris_miss)
 
-  missForest_object <- missForestPredict::missForest(iris_miss, verbose = FALSE)
-  missForest_object_tbl <- missForestPredict::missForest(iris_miss_tbl, verbose = FALSE)
+  missForest_object <- missForestPredict::missForest(iris_miss, save_models = TRUE, verbose = FALSE)
+  missForest_object_tbl <- missForestPredict::missForest(iris_miss_tbl, save_models = TRUE, verbose = FALSE)
   # re-impute
   iris_miss_imp <- missForestPredict::missForestPredict(missForest_object,
                                                         newdata = iris_miss)
@@ -299,9 +299,9 @@ test_that("re-imputing with missForestPredict gives the same results as missFore
   iris_miss <- produce_NA(iris, proportion = 0.1)
   iris_miss_tbl <- as_tibble(iris_miss)
 
-  missForest_object <- missForestPredict::missForest(iris_miss, verbose = FALSE,
+  missForest_object <- missForestPredict::missForest(iris_miss, save_models = TRUE, verbose = FALSE,
                                                      maxiter = 1)
-  missForest_object_tbl <- missForestPredict::missForest(iris_miss_tbl, verbose = FALSE,
+  missForest_object_tbl <- missForestPredict::missForest(iris_miss_tbl, save_models = TRUE, verbose = FALSE,
                                                          maxiter = 1)
   # re-impute
   iris_miss_imp <- missForestPredict::missForestPredict(missForest_object,

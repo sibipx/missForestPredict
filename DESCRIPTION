@@ -16,5 +16,5 @@ Description: The package missForestPredict implements the missing data imputatio
     using the models learned on the training data. 
 License: GPL (>= 2)
 URL: https://gitlab.kuleuven.be/u0143313/missforestpredict/
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 VignetteBuilder: knitr

@@ -3,6 +3,5 @@
 export(evaluate_imputation_error)
 export(missForest)
 export(missForestPredict)
-export(mixError)
 export(produce_NA)
 import(ranger)

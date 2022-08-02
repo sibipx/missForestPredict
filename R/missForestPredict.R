@@ -27,7 +27,7 @@
 #' iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
 #'
 #' # impute train and learn imputation models
-#' iris_train_imp_obj <- missForest(iris_train_miss)
+#' iris_train_imp_obj <- missForest(iris_train_miss, save_models = TRUE)
 #'
 #' # impute test
 #' iris_test_imp_new <- missForestPredict(iris_train_imp_obj, newdata = iris_test_miss)
@@ -38,6 +38,11 @@
 
 
 missForestPredict <- function(missForestObj, newdata, x_init = NULL){
+
+  # check if models were saved
+  if (!missForestObj$save_models)
+    stop("The parameter save_models has been set to FALSE when running missForest.
+         missForestPredict can only run when save_models = TRUE")
 
   # checks for custom
   if (missForestObj$initialization == "custom"){
