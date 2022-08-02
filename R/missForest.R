@@ -69,6 +69,11 @@
 #' iris_imp <- imputation_object$ximp
 #'
 #' @import ranger
+#' @importFrom stats median
+#' @importFrom stats predict
+#' @importFrom stats var
+#' @importFrom stats complete.cases
+#' @importFrom stats weighted.mean
 #' @export
 
 missForest <- function(xmis,

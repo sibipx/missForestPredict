@@ -5,7 +5,7 @@ Version: 1.0
 Date: 2022-01-25
 Author: Elena Albu <elena.albu@kuleuven.be>
 Maintainer: Elena Albu <elena.albu@kuleuven.be>
-Depends: ranger
+Depends: ranger, methods, stats
 Imports: ranger
 Suggests: knitr, rmarkdown, ggplot2, dplyr, tidyr
 Description: The package missForestPredict implements the missing data imputation 
@@ -14,6 +14,7 @@ Description: The package missForestPredict implements the missing data imputatio
     to learn imputation models that can be later used for imputing new observations. 
     The function missForestPredict is used to impute one or multiple new observations (test set) 
     using the models learned on the training data. 
+Encoding: UTF-8
 License: GPL (>= 2)
 URL: https://gitlab.kuleuven.be/u0143313/missforestpredict/
 RoxygenNote: 7.2.0

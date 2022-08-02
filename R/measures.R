@@ -78,6 +78,7 @@ nrmse <- function(ximp, xmis, xtrue){
 #' @param y matrix of true values for y; each column contains a class ordered in the same order as probabilities
 #'
 #' @return Missclassification error rate
+#' @importFrom stats var
 #' @keywords internal
 #' @noRd
 

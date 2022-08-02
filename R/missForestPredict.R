@@ -34,6 +34,9 @@
 #' head(iris_test_imp_new)
 #'
 #' @import ranger
+#' @importFrom stats predict
+#' @importFrom methods is
+#' @importFrom stats complete.cases
 #' @export
 
 
