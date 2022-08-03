@@ -118,6 +118,12 @@ missForest <- function(xmis,
   if (any(sapply(xmis, simplify = 'matrix', is.infinite)))
     stop("The dataframe contains Inf values. Inf values are not supported.")
 
+  NA_only_cols <- colSums(is.na(iris_miss)) == nrow(iris_miss)
+
+  if (any(NA_only_cols))
+    stop(sprintf("There are columns that contain only missing values: %s",
+                paste(names(NA_only_cols)[NA_only_cols], collapse = ", ")))
+
   # check variable types
   p <- ncol(xmis)
   col_names <- colnames(xmis)

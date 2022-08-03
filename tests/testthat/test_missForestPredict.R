@@ -320,9 +320,35 @@ test_that("infinite values result in error", {
   iris_miss <- produce_NA(iris, proportion = 0.1)
   iris_miss[1,1] <- Inf
 
-  expect_error(missForestPredict::missForest(iris_miss, save_models = TRUE, verbose = FALSE,
-                                             maxiter = 1))
+  expect_error(missForestPredict::missForest(iris_miss, verbose = FALSE))
 
 })
 
+test_that("impute complete dataframe returns same dataframe", {
+
+  data(iris)
+
+  missForest_object <- missForestPredict::missForest(iris, save_models = TRUE, verbose = FALSE)
+
+  expect_equal(iris, missForest_object$ximp)
+
+})
+
+test_that("for variable with 1 class a single value model is learned", {
+
+  data(iris)
+
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_train$Species <- "versicolor"
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
+
+  # impute train and test df
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE)
+  iris_test_imp <- missForestPredict::missForestPredict(missForest_object, newdata = iris_test)
+
+  expect_equal(all(iris_test_imp$Species[is.na(iris_test$Species)] == "versicolor"),
+               TRUE)
+
+})
 
