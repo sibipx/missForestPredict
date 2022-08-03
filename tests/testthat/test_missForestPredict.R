@@ -313,3 +313,16 @@ test_that("re-imputing with missForestPredict gives the same results as missFore
   expect_equal(missForest_object_tbl$ximp, iris_miss_imp_tbl)
 
 })
+
+test_that("infinite values result in error", {
+
+  data(iris)
+  iris_miss <- produce_NA(iris, proportion = 0.1)
+  iris_miss[1,1] <- Inf
+
+  expect_error(missForestPredict::missForest(iris_miss, save_models = TRUE, verbose = FALSE,
+                                             maxiter = 1))
+
+})
+
+

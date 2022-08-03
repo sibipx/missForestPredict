@@ -115,8 +115,8 @@ missForest <- function(xmis,
   if (!is.null(OOB_weights) & length(OOB_weights) != ncol(xmis))
     stop(sprintf("OOB_weights has to be a vector of length %s (number of columns", ncol(xmis)))
 
-  if (any(apply(is.na(xmis), 2, sum) == nrow(xmis)))
-    stop("There are variables completely missing in the input data. Remove these before imputation")
+  if (any(sapply(xmis, simplify = 'matrix', is.infinite)))
+    stop("The dataframe contains Inf values. Inf values are not supported.")
 
   # check variable types
   p <- ncol(xmis)
