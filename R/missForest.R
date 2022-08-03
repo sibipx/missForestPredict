@@ -234,6 +234,11 @@ missForest <- function(xmis,
   convergence_criteria <- TRUE
   if (save_models) models <- list() else models <- NULL
 
+  if (verbose) {
+    impute_sequence_prop <- sapply(impute_sequence, function(x) sprintf("%s (%s)", x, OOB_weights[[x]]))
+    cat("Imputation sequence (missing proportion): ", impute_sequence_prop, "\n")
+  }
+
   # iterate RF models
   while (convergence_criteria & iter <= maxiter){
 
@@ -322,7 +327,7 @@ missForest <- function(xmis,
       }
     }
 
-    if (verbose) cat('done!\n')
+    if (verbose) cat("done!\n")
 
     # check convergence
     NMSE_err_new <- weighted.mean(err_NMSE[iter,], w = OOB_weights)
