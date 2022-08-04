@@ -31,6 +31,9 @@ check_predictor_matrix <- function(predictor_matrix, data, verbose = TRUE) {
   if(sum(diag(predictor_matrix)) != 0)
     stop("The diagonal of predictor matrix should be 0. You can set it to 0 using `diag(predictor_matrix) <- 0`")
 
+  if(all(predictor_matrix == 0))
+    stop("All values in the predictor matrix are 0. At least one element should be 1.")
+
   if (verbose){
     message("GREAT! All checks passed succesfully.")
     default_predictor_matrix <- create_predictor_matrix(data)
