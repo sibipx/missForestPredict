@@ -47,6 +47,12 @@ missForestPredict <- function(missForestObj, newdata, x_init = NULL){
     stop("The parameter save_models has been set to FALSE when running missForest.
          missForestPredict can only run when save_models = TRUE")
 
+  # get variables from predictor_matrix (should never be null)
+  predictor_matrix <- missForestObj$predictor_matrix
+  vars_included_to_impute <- rownames(predictor_matrix)[!rowSums(predictor_matrix) == 0]
+  vars_included_as_pred <- colnames(predictor_matrix)[!colSums(predictor_matrix) == 0]
+  vars_used <- unique(c(vars_included_to_impute, vars_included_as_pred))
+
   # checks for custom
   if (missForestObj$initialization == "custom"){
     if(is.null(x_init))
@@ -56,12 +62,12 @@ missForestPredict <- function(missForestObj, newdata, x_init = NULL){
     if(sum(!complete.cases(x_init)) > 0)
       stop("x_init needs to be a complete dataframe with no missing values")
   } else { # check for non-custom
-    if(!length(missForestObj$init) == ncol(newdata))
+    if(!length(missForestObj$init) == length(vars_used))
       stop("Column names for new data should be the same as in the imputation initialization")
-    if(!all(sort(names(missForestObj$init)) == sort(colnames(newdata))))
+    if(!all(sort(names(missForestObj$init)) == sort(vars_used)))
       stop("Column names for new data should be the same as in the imputation initialization")
     if(!all(unlist(lapply(lapply(missForestObj$models, names),
-                          function(x) sort(x) == sort(colnames(newdata))))))
+                          function(x) sort(x) == sort(vars_included_to_impute)))))
       stop("Column names for new data should be the same as in the imputation initialization")
   }
 
@@ -75,7 +81,7 @@ missForestPredict <- function(missForestObj, newdata, x_init = NULL){
                                                     as.double)
     }
 
-    for (c in names(missForestObj$init)){
+    for (c in vars_used){
       ximp[is.na(ximp[,c, drop = TRUE]),c] <- missForestObj$init[[c]]
     }
   } else {
@@ -89,12 +95,14 @@ missForestPredict <- function(missForestObj, newdata, x_init = NULL){
   }
 
   # check that initialization is complete
-  if (any(is.na(ximp))) stop("Something went wrong in initialization")
+  if (any(is.na(ximp[,vars_included_to_impute, drop = FALSE])))
+    stop("Something went wrong in initialization")
 
   NAloc <- is.na(newdata)
   n_iter <- length(missForestObj$models)
   if (n_iter < missForestObj$maxiter) n_iter <- n_iter - 1 # take up to the model that converged (not the last one that was worse)
   impute_sequence <- missForestObj$impute_sequence
+  impute_sequence <- impute_sequence[impute_sequence %in% vars_included_to_impute]
 
   # impute iteratively
   if (n_iter > 0){

@@ -324,16 +324,6 @@ test_that("infinite values result in error", {
 
 })
 
-test_that("impute complete dataframe returns same dataframe", {
-
-  data(iris)
-
-  missForest_object <- missForestPredict::missForest(iris, save_models = TRUE, verbose = FALSE)
-
-  expect_equal(iris, missForest_object$ximp)
-
-})
-
 test_that("for variable with 1 class a single value model is learned", {
 
   data(iris)

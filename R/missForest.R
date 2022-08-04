@@ -425,6 +425,7 @@ missForest <- function(xmis,
               models = models,
               return_integer_as_integer = return_integer_as_integer,
               integer_columns = integer_columns,
+              predictor_matrix = predictor_matrix,
               err_MSE = err_MSE,
               err_NMSE = err_NMSE)
 
