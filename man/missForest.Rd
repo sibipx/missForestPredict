@@ -25,7 +25,9 @@ missForest(
 
 \item{maxiter}{maximum number of iterations}
 
-\item{OOB_weights}{vector of weights for each variable in the convergence criteria.
+\item{OOB_weights}{named vector of weights for each variable in the convergence criteria.
+The names should correspond to variable names. If predictor_matrix is used, it is sufficient to specify the
+variables for which imputation needs to be done (have rowsum in the matrix > 0).
 By default the weights are set to the proportion of missing values on each variable.}
 
 \item{decreasing}{(boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values.
@@ -37,9 +39,9 @@ By default the weights are set to the proportion of missing values on each varia
 
 \item{x_init}{if \code{initialization = custom}; a complete dataframe to be used as initialization (see vignette for example).}
 
-\item{class.weights}{a list of size \code{ncol(xmis)} containing \code{class.weights} parameter to be passed to ranger.
-The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
-will be used as arguments for ranger. (See \code{ranger} function documentation in \code{ranger} package for details).}
+\item{class.weights}{a named list containing \code{class.weights} parameter to be passed to ranger for categorical variables.
+The names of the list needs to respect the names of the categorical variables in the dataframe.
+(See \code{ranger} function documentation in \code{ranger} package for details).}
 
 \item{return_integer_as_integer}{Internally, integer columns are treated as double (double precision floating point numbers).
 If TRUE, the imputations will be rounded to closest integer and returned as integer (This might be desirable for count variables).

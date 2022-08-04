@@ -157,7 +157,7 @@ We will further adapt the weights to be equal. You can observe that the results 
 
 set.seed(2022)
 missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE, 
-                                                   OOB_weights = rep(1, ncol(iris_mis)))
+                                                   OOB_weights = setNames(rep(1, ncol(iris_mis)), colnames(iris_mis)))
 
 # plot convergence
 col_names <- colnames(missForest_object$err_NMSE)

@@ -323,6 +323,180 @@ The errors (MSE, NMSE) for `Sepal.Length` and `Petal.Length` decreased compared 
 
 Also keep in mind that `x_init` should be complete dataframe, if used. For example, if you would wish to impute only one variable using a different method as initialization, you cannot rely on the `missForest` function to do mean/mode initialization for the other variables. You would have to do it yourself before providing `x_init`.
 
+## Using `predictor_matrix`
+
+By default, missForest will create models for all variables in a dataframe and will use all other variables in the imputation of each variable. Controlling which variables to impute and which predictors to use for the imputation of each variable can be done using the parameter `predictor_matrix`. We illustrate three different cases:
+
+- variables not imputed and not used as predictor
+
+- variables not imputed but used as predictor
+
+- variables imputed but not used as predictor
+
+### Variables not imputed and not used as predictor
+
+We consider the case when a date variable is kept in the dataframe for further reference. Such vriable does not need imputation, nor can be used as predictor.
+
+```{r}
+data(iris)
+
+iris$Date_collected <- seq(Sys.Date() - nrow(iris) + 1, Sys.Date(), by="days")
+
+# split train / test
+N <- nrow(iris)
+n_test <- floor(N/3)
+
+set.seed(2022)
+id_test <- sample(1:N, n_test)
+
+iris_train <- iris[-id_test,]
+iris_test <- iris[id_test,]
+
+iris_train_miss <- produce_NA(iris_train, proportion = c(0.1,0.1,0.1,0.1,0.1,0))
+iris_test_miss <- produce_NA(iris_test, proportion = c(0.1,0.1,0.1,0.1,0.1,0))
+
+head(iris_train_miss)
+
+```
+
+We will create a predictor matrix so that the `Date_collected` variable is not included in imputation and not included as predictor. We will initialize the predictor matrix using the function `create_predictor_matrix`. This is the default predictor matrix in which all variables are included for imputation and all other variables are used as predictors. The diagonal is 0 as one variable will not be used as predictor for its own imputation model.
+
+```{r}
+
+predictor_matrix <- create_predictor_matrix(iris_train_miss)
+
+print(predictor_matrix)
+
+```
+
+The rows control the variables to be imputed and the columns control the variables as predictors. We will set all zeros for `Date_collected` both row-wise and column-wise.
+
+```{r}
+
+predictor_matrix["Date_collected",] <- 0
+predictor_matrix[,"Date_collected"] <- 0
+
+print(predictor_matrix)
+
+```
+
+We will pass this matrix to the missForest function.
+
+```{r}
+
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE, 
+                                                       predictor_matrix = predictor_matrix,
+                                                       verbose = TRUE)
+
+iris_train_imp <- iris_train_imp_object$ximp
+
+head(iris_train_imp)
+
+iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_test_miss)
+
+head(iris_test_imp)
+```
+
+### Variables not imputed but used as predictor
+
+We consider the case when we do not want to impute the variable `Sepal.Length` (for example, we do not plan to use it further in a prediction model), but we want to use it as predictor for the imputation of other variables.
+
+```{r}
+data(iris)
+
+# split train / test
+N <- nrow(iris)
+n_test <- floor(N/3)
+
+set.seed(2022)
+id_test <- sample(1:N, n_test)
+
+iris_train <- iris[-id_test,]
+iris_test <- iris[id_test,]
+
+iris_train_miss <- produce_NA(iris_train, proportion = 0.1)
+iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
+
+head(iris_train_miss)
+
+```
+
+We create the predictor matrix and set zeros row-wise. The row represents the variable to be imputed, the columns represent the predictors used in imputation. Setting zero row-wise means: do not use any of the predictors in imputing `Sepal.Length`. This situation is interpreted as: do not build imputation models for `Sepal.Length`. 
+
+```{r}
+
+predictor_matrix <- create_predictor_matrix(iris_train_miss)
+predictor_matrix["Sepal.Length",] <- 0
+
+print(predictor_matrix)
+
+```
+
+```{r}
+
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE, 
+                                                       predictor_matrix = predictor_matrix,
+                                                       verbose = TRUE)
+
+iris_train_imp <- iris_train_imp_object$ximp
+
+iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_test_miss)
+
+head(iris_test_imp)
+```
+
+Models are not built for the variable `Sepal.Length`. Nevertheless this variable is initialized (with mean imputation), as it is used in other imputation models. As this variable is not imputed iteratively, its mean imputation might not be optimal for it being used as predictor. We recommend using this case only for complete variables in the training data and no expected missing values in future data.
+
+```{r}
+names(iris_train_imp_object$models[[1]])
+names(iris_train_imp_object$init)
+```
+
+### Variables imputed but not used as predictor
+
+A third case is that when we want to impute a variable (based on all other variables), but we don't want to use it as predictor for specific variables. For example we do not want to use the `Species` variable in the imputation of `Petal.Length` and `Petal.Width`.
+
+```{r}
+data(iris)
+
+# split train / test
+N <- nrow(iris)
+n_test <- floor(N/3)
+
+set.seed(2022)
+id_test <- sample(1:N, n_test)
+
+iris_train <- iris[-id_test,]
+iris_test <- iris[id_test,]
+
+iris_train_miss <- produce_NA(iris_train, proportion = 0.1)
+iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
+
+head(iris_train_miss)
+
+predictor_matrix <- create_predictor_matrix(iris_train_miss)
+predictor_matrix["Petal.Length","Species"] <- 0
+predictor_matrix["Petal.Width","Species"] <- 0
+
+print(predictor_matrix)
+
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE, 
+                                                       predictor_matrix = predictor_matrix,
+                                                       verbose = TRUE)
+
+iris_train_imp <- iris_train_imp_object$ximp
+
+iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_test_miss)
+
+head(iris_test_imp)
+```
+
 # Final words
 
 The package `missForestPredict` is based on the `missForest` package [@stekhoven2012missforest] with additional functionality for convergence criteria, initialization and imputation of new observations.
