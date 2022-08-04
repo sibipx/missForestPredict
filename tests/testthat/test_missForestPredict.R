@@ -219,7 +219,7 @@ test_that("integer is returned as double when return_integer_as_integer is FALSE
   # impute train and test df
   set.seed(2022)
   missForest_object_df <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE,
-                                                         return_integer_as_integer = FALSE)
+                                                        return_integer_as_integer = FALSE)
   iris_test_df_imp <- missForestPredict::missForestPredict(missForest_object_df, newdata = iris_test)
 
   # impute train and test tibble
@@ -284,7 +284,7 @@ test_that("re-imputing with missForestPredict gives the same results as missFore
   iris_miss_imp <- missForestPredict::missForestPredict(missForest_object,
                                                         newdata = iris_miss)
   iris_miss_imp_tbl <- missForestPredict::missForestPredict(missForest_object_tbl,
-                                                        newdata = iris_miss_tbl)
+                                                            newdata = iris_miss_tbl)
 
   expect_equal(missForest_object$ximp, iris_miss_imp)
   expect_equal(missForest_object_tbl$ximp, iris_miss_imp_tbl)
@@ -342,3 +342,118 @@ test_that("for variable with 1 class a single value model is learned", {
 
 })
 
+test_that("for variable with 1 class a single value model is learned", {
+
+  data(iris)
+
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_train$Species <- "versicolor"
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
+
+  # impute train and test df
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE)
+  iris_test_imp <- missForestPredict::missForestPredict(missForest_object, newdata = iris_test)
+
+  expect_equal(all(iris_test_imp$Species[is.na(iris_test$Species)] == "versicolor"),
+               TRUE)
+
+})
+
+test_that("excluding a variable from imputation works (predictor matrix)", {
+
+  data(iris)
+
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_train$Species <- "versicolor"
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
+
+  predictor_matrix <- create_predictor_matrix(iris_train)
+  predictor_matrix["Sepal.Length",] <- 0
+
+  # impute train and test df
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris_train, save_models = TRUE,
+                                                     predictor_matrix = predictor_matrix,
+                                                     verbose = FALSE)
+  iris_test_imp <- missForestPredict::missForestPredict(missForest_object, newdata = iris_test)
+
+  expect_null(missForest_object$models[[1]]$Sepal.Length)
+  expect_equal(missForest_object$models[[1]]$Sepal.Width$num.independent.variables, 4)
+  expect_equal(missForest_object$models[[1]]$Petal.Length$num.independent.variables, 4)
+  expect_equal(missForest_object$models[[1]]$Petal.Width$num.independent.variables, 4)
+  expect_equal(missForest_object$models[[1]]$Species$num.independent.variables, 4)
+  expect_equal(is.null(missForest_object$init$Sepal.Length), FALSE)
+
+})
+
+test_that("excluding a variable as a predictor works (predictor matrix)", {
+
+  data(iris)
+
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_train$Species <- "versicolor"
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
+
+  predictor_matrix <- create_predictor_matrix(iris_train)
+  predictor_matrix[,"Sepal.Length"] <- 0
+
+  # impute train and test df
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris_train, save_models = TRUE,
+                                                     predictor_matrix = predictor_matrix,
+                                                     verbose = FALSE)
+  iris_test_imp <- missForestPredict::missForestPredict(missForest_object, newdata = iris_test)
+
+  expect_equal(is.null(missForest_object$models[[1]]$Sepal.Length), FALSE)
+  expect_equal(missForest_object$models[[1]]$Sepal.Width$num.independent.variables, 3)
+  expect_equal(missForest_object$models[[1]]$Petal.Length$num.independent.variables, 3)
+  expect_equal(missForest_object$models[[1]]$Petal.Width$num.independent.variables, 3)
+  expect_equal(missForest_object$models[[1]]$Species$num.independent.variables, 3)
+  expect_equal(is.null(missForest_object$init$Sepal.Length), FALSE)
+  expect_equal(sort(missForest_object$models[[1]]$Sepal.Length$forest$independent.variable.names),
+               sort(names(predictor_matrix["Sepal.Length",][predictor_matrix["Sepal.Length",] == 1])))
+  expect_equal(sort(missForest_object$models[[1]]$Sepal.Width$forest$independent.variable.names),
+               sort(names(predictor_matrix["Sepal.Width",][predictor_matrix["Sepal.Width",] == 1])))
+  expect_equal(sort(missForest_object$models[[1]]$Petal.Length$forest$independent.variable.names),
+               sort(names(predictor_matrix["Petal.Length",][predictor_matrix["Petal.Length",] == 1])))
+  expect_equal(sort(missForest_object$models[[1]]$Petal.Width$forest$independent.variable.names),
+               sort(names(predictor_matrix["Petal.Width",][predictor_matrix["Petal.Width",] == 1])))
+  expect_equal(sort(missForest_object$models[[1]]$Species$forest$independent.variable.names),
+               sort(names(predictor_matrix["Species",][predictor_matrix["Species",] == 1])))
+})
+
+test_that("excluding a variable from imputation and as a predictor works (predictor matrix)", {
+
+  data(iris)
+
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_train$Species <- "versicolor"
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
+
+  predictor_matrix <- create_predictor_matrix(iris_train)
+  predictor_matrix[,"Sepal.Length"] <- 0
+  predictor_matrix["Sepal.Length",] <- 0
+
+  # impute train and test df
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris_train, save_models = TRUE,
+                                                     predictor_matrix = predictor_matrix,
+                                                     verbose = FALSE)
+  iris_test_imp <- missForestPredict::missForestPredict(missForest_object, newdata = iris_test)
+
+  expect_null(missForest_object$models[[1]]$Sepal.Length)
+  expect_equal(missForest_object$models[[1]]$Sepal.Width$num.independent.variables, 3)
+  expect_equal(missForest_object$models[[1]]$Petal.Length$num.independent.variables, 3)
+  expect_equal(missForest_object$models[[1]]$Petal.Width$num.independent.variables, 3)
+  expect_equal(missForest_object$models[[1]]$Species$num.independent.variables, 3)
+  expect_null(missForest_object$init$Sepal.Length)
+  expect_equal(sort(missForest_object$models[[1]]$Sepal.Width$forest$independent.variable.names),
+               sort(names(predictor_matrix["Sepal.Width",][predictor_matrix["Sepal.Width",] == 1])))
+  expect_equal(sort(missForest_object$models[[1]]$Petal.Length$forest$independent.variable.names),
+               sort(names(predictor_matrix["Petal.Length",][predictor_matrix["Petal.Length",] == 1])))
+  expect_equal(sort(missForest_object$models[[1]]$Petal.Width$forest$independent.variable.names),
+               sort(names(predictor_matrix["Petal.Width",][predictor_matrix["Petal.Width",] == 1])))
+  expect_equal(sort(missForest_object$models[[1]]$Species$forest$independent.variable.names),
+               sort(names(predictor_matrix["Species",][predictor_matrix["Species",] == 1])))
+})
