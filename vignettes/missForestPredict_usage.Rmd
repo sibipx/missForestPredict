@@ -497,6 +497,13 @@ iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object,
 head(iris_test_imp)
 ```
 
+A predictor matrix can be checked using the function `check_predictor_matrix`. In case the predictor matrix is not valid, an error will be returned. For valid predictor matrices, human readable message about the imputation scheme will be printed.
+
+```{r}
+check_predictor_matrix(predictor_matrix, iris_train)
+
+```
+
 # Final words
 
 The package `missForestPredict` is based on the `missForest` package [@stekhoven2012missforest] with additional functionality for convergence criteria, initialization and imputation of new observations.

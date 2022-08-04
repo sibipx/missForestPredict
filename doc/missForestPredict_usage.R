@@ -186,3 +186,140 @@ evaluate_imputation_error(iris_test_imp, iris_test_miss, iris_test)
 evaluate_imputation_error(iris_test_init, iris_test_miss, iris_test)
 
 
+## -----------------------------------------------------------------------------
+data(iris)
+
+iris$Date_collected <- seq(Sys.Date() - nrow(iris) + 1, Sys.Date(), by="days")
+
+# split train / test
+N <- nrow(iris)
+n_test <- floor(N/3)
+
+set.seed(2022)
+id_test <- sample(1:N, n_test)
+
+iris_train <- iris[-id_test,]
+iris_test <- iris[id_test,]
+
+iris_train_miss <- produce_NA(iris_train, proportion = c(0.1,0.1,0.1,0.1,0.1,0))
+iris_test_miss <- produce_NA(iris_test, proportion = c(0.1,0.1,0.1,0.1,0.1,0))
+
+head(iris_train_miss)
+
+
+## -----------------------------------------------------------------------------
+
+predictor_matrix <- create_predictor_matrix(iris_train_miss)
+
+print(predictor_matrix)
+
+
+## -----------------------------------------------------------------------------
+
+predictor_matrix["Date_collected",] <- 0
+predictor_matrix[,"Date_collected"] <- 0
+
+print(predictor_matrix)
+
+
+## -----------------------------------------------------------------------------
+
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE, 
+                                                       predictor_matrix = predictor_matrix,
+                                                       verbose = TRUE)
+
+iris_train_imp <- iris_train_imp_object$ximp
+
+head(iris_train_imp)
+
+iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_test_miss)
+
+head(iris_test_imp)
+
+## -----------------------------------------------------------------------------
+data(iris)
+
+# split train / test
+N <- nrow(iris)
+n_test <- floor(N/3)
+
+set.seed(2022)
+id_test <- sample(1:N, n_test)
+
+iris_train <- iris[-id_test,]
+iris_test <- iris[id_test,]
+
+iris_train_miss <- produce_NA(iris_train, proportion = 0.1)
+iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
+
+head(iris_train_miss)
+
+
+## -----------------------------------------------------------------------------
+
+predictor_matrix <- create_predictor_matrix(iris_train_miss)
+predictor_matrix["Sepal.Length",] <- 0
+
+print(predictor_matrix)
+
+
+## -----------------------------------------------------------------------------
+
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE, 
+                                                       predictor_matrix = predictor_matrix,
+                                                       verbose = TRUE)
+
+iris_train_imp <- iris_train_imp_object$ximp
+
+iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_test_miss)
+
+head(iris_test_imp)
+
+## -----------------------------------------------------------------------------
+names(iris_train_imp_object$models[[1]])
+names(iris_train_imp_object$init)
+
+## -----------------------------------------------------------------------------
+data(iris)
+
+# split train / test
+N <- nrow(iris)
+n_test <- floor(N/3)
+
+set.seed(2022)
+id_test <- sample(1:N, n_test)
+
+iris_train <- iris[-id_test,]
+iris_test <- iris[id_test,]
+
+iris_train_miss <- produce_NA(iris_train, proportion = 0.1)
+iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
+
+head(iris_train_miss)
+
+predictor_matrix <- create_predictor_matrix(iris_train_miss)
+predictor_matrix["Petal.Length","Species"] <- 0
+predictor_matrix["Petal.Width","Species"] <- 0
+
+print(predictor_matrix)
+
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE, 
+                                                       predictor_matrix = predictor_matrix,
+                                                       verbose = TRUE)
+
+iris_train_imp <- iris_train_imp_object$ximp
+
+iris_test_imp <- missForestPredict::missForestPredict(iris_train_imp_object, 
+                                                      newdata = iris_test_miss)
+
+head(iris_test_imp)
+
+## -----------------------------------------------------------------------------
+check_predictor_matrix(predictor_matrix, iris_train)
+
+
