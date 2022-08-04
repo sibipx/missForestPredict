@@ -35,7 +35,7 @@ The imputation algorithm is based on random forests [@breiman01] as implemented 
 
 **Saved models and initialization**
 
-The missing data in each column is initialized the median/mode (or mean/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criterion is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for all variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. Imputation initialization and models are "learned" also for variables with no missing values in the original (training) data. This allows for unfortunate situations in which new observations have different missing patterns than the one encountered in the training data (for example, because of accidental registration errors or because of unfortunate train / test split in which all missing values of a variable with low missingness fall in the test set).
+The missing data in each column is initialized the mean/mode (or median/mode) of that variable derived on complete cases or a custom imputation scheme. Each variable is then imputed using the iterative algorithm of missForest [@stekhoven2012missforest] until a stopping criterion is met. The algorithm supports all variable types (continuous and categorical with two or more levels) and uses a common stopping criteria for all variables. The initialization used for the training data and the random forest models for each iteration are saved and can be later used to impute new observations. Imputation initialization and models are "learned" also for variables with no missing values in the original (training) data. This allows for unfortunate situations in which new observations have different missing patterns than the one encountered in the training data (for example, because of accidental registration errors or because of unfortunate train / test split in which all missing values of a variable with low missingness fall in the test set).
 
 **Imputation of new observations**
 
@@ -111,11 +111,13 @@ head(iris_test_miss)
 
 ```
 
-We will impute the training set and learn the random forest imputation models at the same time using the function `missForest`. By default feedback on the number of iterations and the error monitoring is provided. You can set `verbose = FALSE` to silence this output. More information on error monitoring is provided in a separate vignette.
+We will impute the training set and learn the random forest imputation models at the same time using the function `missForest`. To later use the models learned on a training set for imputation of new observations, `save_models` needs to be set to `TRUE`. 
+
+By default feedback on the number of iterations and the error monitoring is provided. You can set `verbose = FALSE` to silence this output. More information on error monitoring is provided in a separate vignette.
 
 ```{r}
 set.seed(2022)
-iris_train_imp_object <- missForestPredict::missForest(iris_train_miss)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE)
 
 ```
 
@@ -130,7 +132,7 @@ head(iris_train_imp)
 
 We will further impute the test set using the learned imputation models. The function `missForestPredict` will:
 
-- initialize the missing values in each variable with the initialization "learned" from the training set (median/mode)
+- initialize the missing values in each variable with the initialization "learned" from the training set (mean/mode)
 
 - imperatively predict the missing values of each variable using the learned random forest models for each iteration
 
@@ -187,7 +189,7 @@ Imputing the training set with the function `missForestPredict` will give the sa
 
 ```{r}
 set.seed(2022)
-iris_train_imp_object <- missForestPredict::missForest(iris_train_miss)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE)
 
 # store imputed dataframe
 iris_train_imp <- iris_train_imp_object$ximp
@@ -233,7 +235,8 @@ The function `missForest` supports additional parameters to be passed to the `ra
 
 ```{r}
 set.seed(2022)
-diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss, 
+diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss,
+                                                           save_models = TRUE,
                                                            num.trees = 100)
 
 # impute test set
@@ -250,7 +253,7 @@ Note that not all parameters to ranger function are supported. Parameters that s
 
 ## Custom initialization
 
-The parameter `initialization` supports three values: `mean/mode`, `median/mode` and `custom`. The default is median/mode, which will initialize each variable with the median (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable. 
+The parameter `initialization` supports three values: `mean/mode`, `median/mode` and `custom`. The default is mean/mode, which will initialize each variable with the mean (for continuous variables) or mode (for categorical variables) calculated based on the complete observations on that variable. 
 
 When `custom` is used, a complete dataframe is expected in `x_init`. For example, the imputations of another imputation method can be used as initialization. When `custom` is used in `missForest` function, an initialization dataframe has to be passed to the `missForestPredict` function later on too. 
 
@@ -294,6 +297,7 @@ iris_train_init$Petal.Length[is.na(iris_train_init$Petal.Length)] <-
 # impute the training set using this initialization
 set.seed(2022)
 iris_train_imp_obj <- missForest(iris_train_miss, 
+                                 save_models = TRUE,
                                  initialization = "custom", 
                                  x_init = iris_train_init)
 
@@ -317,7 +321,7 @@ evaluate_imputation_error(iris_test_init, iris_test_miss, iris_test)
 
 The errors (MSE, NMSE) for `Sepal.Length` and `Petal.Length` decreased compared to the initialization imputation. The missclasification error (MER) for `Species` is 0 (if a variable does not have missing values, the error returned will be 0). 
 
-Also keep in mind that `x_init` should be complete dataframe, if used. For example, if you would wish to impute only one variable using a different method as initialization, you cannot rely on the `missForest` function to do median/mode initialization for the other variables. You would have to do it yourself before providing `x_init`.
+Also keep in mind that `x_init` should be complete dataframe, if used. For example, if you would wish to impute only one variable using a different method as initialization, you cannot rely on the `missForest` function to do mean/mode initialization for the other variables. You would have to do it yourself before providing `x_init`.
 
 # Final words
 

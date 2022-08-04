@@ -26,22 +26,26 @@
 #'
 #' @param xmis dataframe containing missing values of class dataframe ("tibble" class tbl_df is also supported). Matrix format is not supported. See details for column format.
 #' @param maxiter maximum number of iterations
-#' @param OOB_weights vector of weights for each variable in the convergence criteria.
+#' @param OOB_weights named vector of weights for each variable in the convergence criteria.
+#' The names should correspond to variable names. If predictor_matrix is used, it is sufficient to specify the
+#' variables for which imputation needs to be done (have rowsum in the matrix > 0).
 #' By default the weights are set to the proportion of missing values on each variable.
 #' @param decreasing (boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values.
 #' (the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.
 #' @param force TODO: this is used by me for comparison tests; will be removed at the end.
 #' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom. Default is mean/mode.
 #' @param x_init if \code{initialization = custom}; a complete dataframe to be used as initialization (see vignette for example).
-#' @param class.weights a list of size \code{ncol(xmis)} containing \code{class.weights} parameter to be passed to ranger.
-#' The order of the list needs to respect the order of the columns. Only list elements corresponding to the positions of factor variables
-#' will be used as arguments for ranger. (See \code{ranger} function documentation in \code{ranger} package for details).
+#' @param class.weights a named list containing \code{class.weights} parameter to be passed to ranger for categorical variables.
+#' The names of the list needs to respect the names of the categorical variables in the dataframe.
+#' (See \code{ranger} function documentation in \code{ranger} package for details).
 #' @param return_integer_as_integer Internally, integer columns are treated as double (double precision floating point numbers).
 #' If TRUE, the imputations will be rounded to closest integer and returned as integer (This might be desirable for count variables).
 #' If FALSE, integer columns will be returned as double (This might be desirable, for example, for patient age imputation).
 #' Default is FALSE. The same behaviour will be applied to new observations when using missForestPredict.
 #' @param save_models if TRUE, imputation models are saved and a new observation (or a test set) can be imputed using the models learned;
 #' saving models on a dataset with a high number of variables will occupy RAM memory on the machine
+#' @param predictor_matrix predictor matrix indicating which variables to use in the imputation of each variable.
+#' See documentation for function `create_predictor_matrix` for details on the matrix format.
 #' @param verbose (boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported).
 #' See vignette for \code{num.trees} example.
@@ -86,6 +90,7 @@ missForest <- function(xmis,
                        class.weights = NULL,
                        return_integer_as_integer = FALSE,
                        save_models = FALSE,
+                       predictor_matrix = NULL,
                        verbose = TRUE,
                        ...){
 
@@ -112,26 +117,52 @@ missForest <- function(xmis,
     }
   }
 
-  if (!is.null(OOB_weights) & length(OOB_weights) != ncol(xmis))
-    stop(sprintf("OOB_weights has to be a vector of length %s (number of columns", ncol(xmis)))
+  # prepare predictor matrix
+  if (!is.null(predictor_matrix)){
+    check_predictor_matrix(predictor_matrix, xmis, verbose = FALSE)
+  } else {
+    predictor_matrix <- create_predictor_matrix(xmis)
+  }
 
-  if (any(sapply(xmis, simplify = 'matrix', is.infinite)))
+  # variables included / skipped from imputation
+  vars_skipped_to_impute <- rownames(predictor_matrix)[rowSums(predictor_matrix) == 0]
+  vars_included_to_impute <- rownames(predictor_matrix)[!rowSums(predictor_matrix) == 0]
+  # variables used / not used as predictors
+  vars_skipped_as_pred <- colnames(predictor_matrix)[colSums(predictor_matrix) == 0]
+  vars_included_as_pred <- colnames(predictor_matrix)[!colSums(predictor_matrix) == 0]
+  vars_used <- unique(c(vars_included_to_impute, vars_included_as_pred))
+
+  if (!is.null(OOB_weights)){
+
+    if (is.null(names(OOB_weights)))
+      stop("OOB_weights needs to be a named vector.")
+
+    is_in_OOB_weights <- vars_included_to_impute %in% names(OOB_weights)
+
+    if (!all(is_in_OOB_weights))
+      stop("Variables %s need to be imputed and are not specified in OOB_weights.",
+           vars_included_to_impute[!is_in_OOB_weights])
+
+  }
+
+  if (any(sapply(xmis[,vars_used], simplify = 'matrix', is.infinite)))
     stop("The dataframe contains Inf values. Inf values are not supported.")
 
-  NA_only_cols <- colSums(is.na(iris_miss)) == nrow(iris_miss)
+  NA_only_cols <- colSums(is.na(xmis)) == nrow(xmis)
 
   if (any(NA_only_cols))
     stop(sprintf("There are columns that contain only missing values: %s",
-                paste(names(NA_only_cols)[NA_only_cols], collapse = ", ")))
+                 paste(names(NA_only_cols)[NA_only_cols], collapse = ", ")))
 
   # check variable types
   p <- ncol(xmis)
   col_names <- colnames(xmis)
+  #col_names <- col_names[col_names %in% vars_included_to_impute]
 
   column_class <- function(x) ifelse(is.numeric(x), "numeric",
                                      ifelse(is.factor(x) | is.character(x), "factor", NA_character_))
 
-  var_type <- unlist(lapply(xmis, column_class))
+  var_type <- unlist(lapply(xmis[,vars_used], column_class))
 
   if (any(is.na(var_type)))
     stop(sprintf("Only numeric or factor columns are supported. Logical or other types are not supported. Unsupported variables: %s",
@@ -139,22 +170,26 @@ missForest <- function(xmis,
 
   # check class.weights for factor variables
   if(!is.null(class.weights)){
-    if (!is.list(class.weights) | length(class.weights) != p)
-      stop(sprintf("class.weights needs to be a list of same length as the number of columns (%s)", p))
+    if (!is.list(class.weights) | is.null(names(class.weights)) )
+      stop("class.weights needs to be a named list.")
 
-    names(class.weights) <- col_names
+    factor_vars <- names(var_type[var_type == "factor"])
+    is_in_class_weights <- factor_vars %in% names(class.weights)
 
-    for (c in col_names) {
-      if (var_type[c] == "factor"){
-        if (length(class.weights[[c]]) != length(unique(xmis[!is.na(xmis[,c, drop = TRUE]), c, drop = TRUE])))
-          stop(sprintf("class.weights for variable %s needs to be a vector of size %s (the number of classes in the variable), not %s",
-                       c, length(unique(xmis[, c, drop = TRUE])), length(class.weights[[c]])))
-      }
+    if(!all(is_in_class_weights))
+      stop("All categorical variables need to be in class.weights. Following variables not in class.weights.: %s",
+           factor_vars[!is_in_class_weights])
+
+    for (c in factor_vars) {
+      n_classes <- length(unique(xmis[!is.na(xmis[,c, drop = TRUE]), c, drop = TRUE]))
+      if (length(class.weights[[c]]) != n_classes)
+        stop(sprintf("class.weights for variable %s needs to be a vector of size %s (the number of classes in the variable), not %s",
+                     c, n_classes, length(class.weights[[c]])))
     }
   }
 
   # check factor / character with many levels
-  for (c in col_names) {
+  for (c in vars_included_to_impute) {
     if (var_type[c] == "factor"){
       unique_levels <- length(unique(xmis[, c, drop = TRUE]))
       if (unique_levels > 53)
@@ -178,15 +213,15 @@ missForest <- function(xmis,
     ximp <- xmis
 
     # make all integer columns double (imputed values might not be integer)
-    integer_columns <- colnames(ximp)[unlist(lapply(ximp, is.integer))]
+    integer_columns <- colnames(ximp[,vars_used])[unlist(lapply(ximp[,vars_used], is.integer))]
     if (length(integer_columns) > 0) {
       ximp[, integer_columns] <- lapply(ximp[, integer_columns, drop = FALSE], as.double)
     }
 
-    var_init <- vector("list", p)
-    names(var_init) <- col_names
+    var_init <- vector("list", length(vars_used))
+    names(var_init) <- vars_used
 
-    for (col in col_names) {
+    for (col in vars_used) {
       if (var_type[[col]] == "numeric") {
         # keep mean or median
         if (initialization == "mean/mode"){
@@ -219,29 +254,34 @@ missForest <- function(xmis,
   # extract missingness pattern
   NAloc <- is.na(xmis)            # where are missings
   noNAvar <- apply(NAloc, 2, sum) # how many are missing in the vars
+  miss_proportion <- noNAvar/nrow(xmis)
   # imputation sequence, first the lowest missingness column if decreasing = FALSE
   impute_sequence <- names(sort(noNAvar, decreasing = decreasing))
-  # set weights proprtional to the misingness
-  if(is.null(OOB_weights)) {
-    if (sum(noNAvar) == 0){
-      OOB_weights <- rep(1, p)
-    } else {
-      OOB_weights <- noNAvar/nrow(xmis)
-    }
-  }
+  impute_sequence <- impute_sequence[impute_sequence %in% vars_included_to_impute]
+
+  # set weights
+  OOB_weights <- miss_proportion
+  if (sum(OOB_weights) == 0)
+    OOB_weights <- replace(OOB_weights, names(OOB_weights), 1)
+  OOB_weights <- OOB_weights[names(OOB_weights) %in% vars_included_to_impute]
 
   # keep MSE and NMSE
-  err_MSE <- data.frame(matrix(ncol = p, nrow = 0))
-  colnames(err_MSE) <- col_names
-  err_NMSE <- data.frame(matrix(ncol = p, nrow = 0))
-  colnames(err_NMSE) <- col_names
+  err_MSE <- data.frame(matrix(ncol = length(vars_included_to_impute), nrow = 0))
+  colnames(err_MSE) <- vars_included_to_impute
+  err_NMSE <- data.frame(matrix(ncol = length(vars_included_to_impute), nrow = 0))
+  colnames(err_NMSE) <- vars_included_to_impute
 
   iter <- 1
   convergence_criteria <- TRUE
   if (save_models) models <- list() else models <- NULL
 
   if (verbose) {
-    impute_sequence_prop <- sapply(impute_sequence, function(x) sprintf("%s (%s)", x, OOB_weights[[x]]))
+    if (length(vars_skipped_to_impute) > 0) {
+      vars_skipped_prop <- sapply(vars_skipped_to_impute, function(x) sprintf("%s (%s)", x, miss_proportion[[x]]))
+      cat("Variables skipped from imputation (missing proportion): ", vars_skipped_prop, "\n")
+    }
+
+    impute_sequence_prop <- sapply(impute_sequence, function(x) sprintf("%s (%s)", x, miss_proportion[[x]]))
     cat("Imputation sequence (missing proportion): ", impute_sequence_prop, "\n")
   }
 
@@ -253,6 +293,7 @@ missForest <- function(xmis,
     if (verbose) cat("  missForest iteration", iter, "in progress...")
 
     t_start <- proc.time()
+    # TODO: is it possible not to store this?
     ximp_old <- ximp
 
     for (col in impute_sequence){
@@ -260,8 +301,10 @@ missForest <- function(xmis,
       obsi <- !NAloc[, col]
       misi <- NAloc[, col]
       obsY <- ximp[obsi, col, drop = TRUE]
-      obsX <- ximp[obsi, names(ximp)!=col]
-      misX <- ximp[misi, names(ximp)!=col]
+
+      predictor_cols <- colnames(predictor_matrix)[predictor_matrix[col,] == 1]
+      obsX <- ximp[obsi, predictor_cols]
+      misX <- ximp[misi, predictor_cols]
 
       if (var_type[col] == "numeric") {
 
@@ -338,7 +381,7 @@ missForest <- function(xmis,
     # check convergence
     NMSE_err_new <- weighted.mean(err_NMSE[iter,], w = OOB_weights)
     if (iter == 1) {
-      NMSE_err_old <- weighted.mean(rep(1, p), w = OOB_weights)
+      NMSE_err_old <- weighted.mean(rep(1, length(vars_included_to_impute)), w = OOB_weights)
     } else {
       NMSE_err_old <- weighted.mean(err_NMSE[iter - 1,], w = OOB_weights)
     }

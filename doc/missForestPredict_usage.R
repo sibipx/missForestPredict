@@ -36,7 +36,7 @@ head(iris_test_miss)
 
 ## -----------------------------------------------------------------------------
 set.seed(2022)
-iris_train_imp_object <- missForestPredict::missForest(iris_train_miss)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE)
 
 
 ## -----------------------------------------------------------------------------
@@ -79,7 +79,7 @@ head(iris_test_imp)
 
 ## -----------------------------------------------------------------------------
 set.seed(2022)
-iris_train_imp_object <- missForestPredict::missForest(iris_train_miss)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE)
 
 # store imputed dataframe
 iris_train_imp <- iris_train_imp_object$ximp
@@ -115,7 +115,8 @@ head(diamonds_test_miss)
 
 ## -----------------------------------------------------------------------------
 set.seed(2022)
-diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss, 
+diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss,
+                                                           save_models = TRUE,
                                                            num.trees = 100)
 
 # impute test set
@@ -164,6 +165,7 @@ iris_train_init$Petal.Length[is.na(iris_train_init$Petal.Length)] <-
 # impute the training set using this initialization
 set.seed(2022)
 iris_train_imp_obj <- missForest(iris_train_miss, 
+                                 save_models = TRUE,
                                  initialization = "custom", 
                                  x_init = iris_train_init)
 

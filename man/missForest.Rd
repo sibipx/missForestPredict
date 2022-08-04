@@ -15,6 +15,7 @@ missForest(
   class.weights = NULL,
   return_integer_as_integer = FALSE,
   save_models = FALSE,
+  predictor_matrix = NULL,
   verbose = TRUE,
   ...
 )
@@ -47,6 +48,9 @@ Default is FALSE. The same behaviour will be applied to new observations when us
 
 \item{save_models}{if TRUE, imputation models are saved and a new observation (or a test set) can be imputed using the models learned;
 saving models on a dataset with a high number of variables will occupy RAM memory on the machine}
+
+\item{predictor_matrix}{predictor matrix indicating which variables to use in the imputation of each variable.
+See documentation for function `create_predictor_matrix` for details on the matrix format.}
 
 \item{verbose}{(boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.}
 
