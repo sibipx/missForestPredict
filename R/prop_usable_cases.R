@@ -3,7 +3,7 @@
 #' Calculates variable-wise proportion of usable cases (missing and observed) as in Molenberghs et al. (2014).
 #'
 #' missForest builds models for each variable using the observed values of that variable as outcome
-#' of a random forest model. It then imputed the missing part of the variable using the learned models.
+#' of a random forest model. It then imputes the missing part of the variable using the learned models.
 #'
 #' If all values of a predictor are missing among the observed value of the outcome,
 #' the value of \code{p_obs} will be 1 and the model built will rely heavily on the initialized values.

@@ -504,6 +504,33 @@ check_predictor_matrix(predictor_matrix, iris_train)
 
 ```
 
+### Impact of `proportion_usable_cases` on the predictor matrix
+
+The default predictor matrix can be altered by the setting of `proportion_usable_cases`. 
+
+missForest initializes each variable and then builds models for each variable using the observed values of that variable as outcome of a random forest model. It then imputes the missing part of the variable using the learned models. Situations when a variable is mostly or completely missing for the observed part of another variable are suboptimal for learning the models, as the models will mostly rely on the initialization rather than on true values. Situations when a variable is missing for the missing part of another variable are suboptimal for the imputation (prediction) part as the predictions will rely on the initialization rather than on true values. By default `proportion_usable_cases` will filter the variables (as predictors) if they are completely missing for the observed or missing part of another variable.
+
+As an example, we will make `Sepal.Length` and `Sepal.Width` in `iris` missing together and `Petal.Length` missing for the observed part of these variables. Checking the predictor matrix post imputation will reveal that these variables will not be used as predictor for each other because of the "sub-optimal" missingness pattern.
+
+```{r}
+
+data(iris)
+
+iris_mis <- iris
+iris_mis[1:50, "Sepal.Length"] <- NA
+iris_mis[1:50, "Sepal.Width"] <- NA
+iris_mis[51:150, "Petal.Length"] <- NA
+
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_mis, save_models = TRUE, 
+                                                       verbose = TRUE)
+
+print(iris_train_imp_object$predictor_matrix)
+
+check_predictor_matrix(iris_train_imp_object$predictor_matrix, iris_mis, verbose = TRUE)
+
+```
+
 # Final words
 
 The package `missForestPredict` is based on the `missForest` package [@stekhoven2012missforest] with additional functionality for convergence criteria, initialization and imputation of new observations.
