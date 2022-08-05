@@ -10,7 +10,7 @@ prop_usable_cases(data)
 \item{data}{dataframe to be imputed}
 }
 \value{
-a list with two elements: \code{p_miss} and \code{p_obs}
+a list with two elements: \code{p_obs} and \code{p_miss}
     \item{\code{p_obs}}{the proportion of missing \eqn{Y_k} among observed \eqn{Y_j}; j in rows, k in columns}
     \item{\code{p_miss}}{the proportion of observed \eqn{Y_k} among missing \eqn{Y_j}; j in rows, k in columns}
 }

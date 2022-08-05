@@ -45,7 +45,12 @@
 #' @param save_models if TRUE, imputation models are saved and a new observation (or a test set) can be imputed using the models learned;
 #' saving models on a dataset with a high number of variables will occupy RAM memory on the machine
 #' @param predictor_matrix predictor matrix indicating which variables to use in the imputation of each variable.
-#' See documentation for function `create_predictor_matrix` for details on the matrix format.
+#' See documentation for function \code{create_predictor_matrix} for details on the matrix format.
+#' @param proportion_usable_cases a vector with two components: the first one is a minimum threshold for \code{p_obs}
+#' and the second one is a maximum threshold for \code{p_miss}. Variables for which \code{p_obs} is greater than or equal to 1 (by default)
+#' will be filtered from the predictor matrix. Variables for which \code{p_miss} is lower than or equal to 0 (by default)
+#' will be filtered from the predictor matrix. For more details on \code{p_obs} and \code{p_miss} see the documentation for
+#' the \code{prop_usable_cases} function. If parameter \code{predictor_matrix} is specified, \code{proportion_usable_cases} will be ignored.
 #' @param verbose (boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported).
 #' See vignette for \code{num.trees} example.
@@ -91,6 +96,7 @@ missForest <- function(xmis,
                        return_integer_as_integer = FALSE,
                        save_models = FALSE,
                        predictor_matrix = NULL,
+                       proportion_usable_cases = c(1,0),
                        verbose = TRUE,
                        ...){
 
@@ -117,11 +123,30 @@ missForest <- function(xmis,
     }
   }
 
+  # calculate proportion of usable cases
+  if (is.null(predictor_matrix)){
+
+    prop_usable_cases <- prop_usable_cases(xmis)
+
+    p_obs <- proportion_usable_cases[[1]]
+    p_mis <- proportion_usable_cases[[2]]
+
+    prop_usable_cases_matrix_obs <- prop_usable_cases$p_obs < p_obs
+    prop_usable_cases_matrix_miss <- prop_usable_cases$p_miss > p_mis
+    # make diagonal always FALSE (do not include a var as predictor for itself)
+    diag(prop_usable_cases_matrix_miss) <- FALSE
+    # inclusion matrix
+    usable_cases_matrix <- prop_usable_cases_matrix_obs & prop_usable_cases_matrix_miss
+    usable_cases_matrix[is.na(usable_cases_matrix)] <- TRUE
+    usable_cases_matrix <- usable_cases_matrix + 0
+  }
+
   # prepare predictor matrix
   if (!is.null(predictor_matrix)){
     check_predictor_matrix(predictor_matrix, xmis, verbose = FALSE)
   } else {
     predictor_matrix <- create_predictor_matrix(xmis)
+    predictor_matrix <- (predictor_matrix & usable_cases_matrix) + 0
   }
 
   # variables included / skipped from imputation
@@ -155,10 +180,6 @@ missForest <- function(xmis,
                  paste(names(NA_only_cols)[NA_only_cols], collapse = ", ")))
 
   # check variable types
-  p <- ncol(xmis)
-  col_names <- colnames(xmis)
-  #col_names <- col_names[col_names %in% vars_included_to_impute]
-
   column_class <- function(x) ifelse(is.numeric(x), "numeric",
                                      ifelse(is.factor(x) | is.character(x), "factor", NA_character_))
 

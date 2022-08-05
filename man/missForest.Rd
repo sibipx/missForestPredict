@@ -16,6 +16,7 @@ missForest(
   return_integer_as_integer = FALSE,
   save_models = FALSE,
   predictor_matrix = NULL,
+  proportion_usable_cases = c(1, 0),
   verbose = TRUE,
   ...
 )
@@ -52,7 +53,13 @@ Default is FALSE. The same behaviour will be applied to new observations when us
 saving models on a dataset with a high number of variables will occupy RAM memory on the machine}
 
 \item{predictor_matrix}{predictor matrix indicating which variables to use in the imputation of each variable.
-See documentation for function `create_predictor_matrix` for details on the matrix format.}
+See documentation for function \code{create_predictor_matrix} for details on the matrix format.}
+
+\item{proportion_usable_cases}{a vector with two components: the first one is a minimum threshold for \code{p_obs}
+and the second one is a maximum threshold for \code{p_miss}. Variables for which \code{p_obs} is greater than or equal to 1 (by default)
+will be filtered from the predictor matrix. Variables for which \code{p_miss} is lower than or equal to 0 (by default)
+will be filtered from the predictor matrix. For more details on \code{p_obs} and \code{p_miss} see the documentation for
+the \code{prop_usable_cases} function. If parameter \code{predictor_matrix} is specified, \code{proportion_usable_cases} will be ignored.}
 
 \item{verbose}{(boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.}
 
