@@ -82,6 +82,12 @@ missForestPredict <- function(missForestObj, newdata, x_init = NULL){
     }
 
     for (c in vars_used){
+
+      # if new observations have different factor levels than on the learned data, add the levels to the factor
+      if (is.factor(ximp[,c, drop = TRUE]) &
+          !(missForestObj$init[[c]] %in% levels(ximp[,c, drop = TRUE])))
+        levels(ximp[,c]) <- union(levels(ximp[,c, drop = TRUE]), missForestObj$init[[c]])
+
       ximp[is.na(ximp[,c, drop = TRUE]),c] <- missForestObj$init[[c]]
     }
   } else {

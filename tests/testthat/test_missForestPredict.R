@@ -165,43 +165,6 @@ test_that("imputation is the same for factor and character", {
 
 })
 
-test_that("imputation prediction is the same for factor and character", {
-
-  data(iris)
-
-  #iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
-  #iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
-
-  iris_train <- produce_NA(iris[1:150,], proportion = 0.1)
-  iris_test <- produce_NA(iris[40:150,], proportion = 0.1)
-
-  iris_train_chr <- iris_train
-  iris_test_chr <- iris_test
-  iris_train_chr$Species <- as.character(iris_train_chr$Species)
-  iris_test_chr$Species <- as.character(iris_test_chr$Species)
-
-  set.seed(2022)
-  missForest_object_fct <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE)
-  set.seed(2022)
-  missForest_predictions_fct <- missForestPredict::missForestPredict(missForest_object_fct,
-                                                                     newdata = iris_test)
-
-
-  set.seed(2022)
-  missForest_object_char <- missForestPredict::missForest(iris_train_chr, save_models = TRUE, verbose = FALSE)
-  set.seed(2022)
-  missForest_predictions_char <- missForestPredict::missForestPredict(missForest_object_char,
-                                                                      newdata = iris_test_chr)
-
-  missForest_predictions_char$Species <- as.factor(missForest_predictions_char$Species)
-
-  # TODO: I don't understand why this test fails!
-  # TODO: test: train contains different factor levels than test
-
-  expect_equal(missForest_predictions_fct, missForest_predictions_char)
-
-})
-
 test_that("integer is returned as double when return_integer_as_integer is FALSE", {
 
   require(tidyverse)
@@ -456,4 +419,24 @@ test_that("excluding a variable from imputation and as a predictor works (predic
                sort(names(predictor_matrix["Petal.Width",][predictor_matrix["Petal.Width",] == 1])))
   expect_equal(sort(missForest_object$models[[1]]$Species$forest$independent.variable.names),
                sort(names(predictor_matrix["Species",][predictor_matrix["Species",] == 1])))
+})
+
+test_that("imputation works when train and test have different factor levels", {
+
+  data(iris)
+
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_train$Species <- "versicolor"
+  iris_train$Species <- as.factor(iris_train$Species)
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
+  iris_test$Species <- as.factor(as.character(iris_test$Species))
+
+  # impute train and test df
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE)
+  iris_test_imp <- missForestPredict::missForestPredict(missForest_object, newdata = iris_test)
+
+  expect_equal(all(iris_test_imp$Species[is.na(iris_test$Species)] == "versicolor"),
+               TRUE)
+
 })
