@@ -281,7 +281,7 @@ missForest <- function(xmis,
   impute_sequence <- impute_sequence[impute_sequence %in% vars_included_to_impute]
 
   # set weights
-  OOB_weights <- miss_proportion
+  if(is.null(OOB_weights)) OOB_weights <- miss_proportion
   if (sum(OOB_weights) == 0)
     OOB_weights <- replace(OOB_weights, names(OOB_weights), 1)
   OOB_weights <- OOB_weights[names(OOB_weights) %in% vars_included_to_impute]
