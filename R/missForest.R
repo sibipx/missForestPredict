@@ -377,7 +377,7 @@ missForest <- function(xmis,
 
         RF <- ranger(x = obsX, y = obsY,
                      probability = TRUE,
-                     class.weights = class.weights[[col]],
+                     class.weights = class.weights[[col]][levels(obsY)],
                      ...)
 
         # save model
