@@ -286,6 +286,20 @@ missForest <- function(xmis,
     OOB_weights <- replace(OOB_weights, names(OOB_weights), 1)
   OOB_weights <- OOB_weights[names(OOB_weights) %in% vars_included_to_impute]
 
+  # set class weights
+  if (is.null(class.weights) & any(var_type == "factor")) {
+    factor_vars <- names(var_type[var_type == "factor"])
+
+    class.weights <- list()
+    for (var in factor_vars){
+      xmis[,var] <- as.factor(xmis[,var, drop = TRUE]) # in case it is character
+      class_props <- prop.table(table(xmis[,var, drop = TRUE], useNA = "no"))
+      class_props <- class_props[levels(xmis[,var, drop = TRUE])]
+
+      class.weights[[var]] <- class_props
+    }
+  }
+
   # keep MSE and NMSE
   err_MSE <- data.frame(matrix(ncol = length(vars_included_to_impute), nrow = 0))
   colnames(err_MSE) <- vars_included_to_impute
