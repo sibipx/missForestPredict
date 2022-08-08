@@ -340,21 +340,22 @@ missForest <- function(xmis,
           ximp[misi, col] <- misY
         }
 
-        # save the OOB error for convergence (NMSE)
+        # check if all observations are out of bag
         oob_i <- !is.na(RF$predictions)
 
-        if (var(ximp[oob_i, col, drop = TRUE]) != 0){ # constant columns have 0 variance
-          err_NMSE[iter, col] <- RF$prediction.error / var(ximp[oob_i, col, drop = TRUE])
-        } else {
-          err_NMSE[iter, col] <- 0 # TODO: is this the best thing?
-        }
-
-        # save the OOB error (MSE)
         if (sum(oob_i) != length(RF$predictions)){
           warning(sprintf("For variable %s there are %s observations out of %s for which the OOB error cannot be evaluated. These observations are excluded. Consider increasing the number of trees (num.trees) to ensure reliable results",
                           col, dim(RF$predictions)[[1]] - sum(oob_i), dim(RF$predictions)[[1]]))
         }
 
+        # save the OOB error for convergence (NMSE)
+        if (var(ximp[obsi, col, drop = TRUE]) != 0){ # constant columns have 0 variance
+          err_NMSE[iter, col] <- RF$prediction.error / var(ximp[obsi, col, drop = TRUE])
+        } else {
+          err_NMSE[iter, col] <- 0 # TODO: is this the best thing?
+        }
+
+        # save the OOB error (MSE)
         err_MSE[iter, col] <- mse(RF$predictions[oob_i], obsY[oob_i])
 
       } else {
