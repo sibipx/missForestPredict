@@ -301,10 +301,10 @@ missForest <- function(xmis,
   }
 
   # keep MSE and NMSE
-  err_MSE <- data.frame(matrix(ncol = length(vars_included_to_impute), nrow = 0))
-  colnames(err_MSE) <- vars_included_to_impute
-  err_NMSE <- data.frame(matrix(ncol = length(vars_included_to_impute), nrow = 0))
-  colnames(err_NMSE) <- vars_included_to_impute
+  err_MSE <- data.frame(matrix(ncol = length(impute_sequence), nrow = 0))
+  colnames(err_MSE) <- impute_sequence
+  err_NMSE <- data.frame(matrix(ncol = length(impute_sequence), nrow = 0))
+  colnames(err_NMSE) <- impute_sequence
 
   iter <- 1
   convergence_criteria <- TRUE
