@@ -296,7 +296,7 @@ missForest <- function(xmis,
       class_props <- prop.table(table(xmis[,var, drop = TRUE], useNA = "no"))
       class_props <- class_props[levels(xmis[,var, drop = TRUE])]
 
-      class.weights[[var]] <- class_props
+      class.weights[[var]] <- nrow(xmis) / (length(class_props) * class_props)
     }
   }
 
