@@ -37,7 +37,8 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue, all = FALSE){
   results <- data.frame(variable = col_names,
                         MSE = NA_real_,
                         NMSE = NA_real_,
-                        MER = NA_real_)
+                        MER = NA_real_,
+                        macro_F1 = NA_real_)
 
   # localize missing
   NAloc <- is.na(xmis)
@@ -65,8 +66,12 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue, all = FALSE){
     } else {
       if (length(ximp[misi, col, drop = TRUE]) > 0) {
         results[results$variable == col, "MER"] <- mer(ximp[ind, col, drop = TRUE], xtrue[ind, col, drop = TRUE])
+        results[results$variable == col, "macro_F1"] <- macro_F1(ximp[ind, col, drop = TRUE], xtrue[ind, col, drop = TRUE])
+        results[results$variable == col, "F1_score"] <- F1_score(ximp[ind, col, drop = TRUE], xtrue[ind, col, drop = TRUE])
       } else {
         results[results$variable == col, "MER"] <- 0
+        results[results$variable == col, "macro_F1"] <- 0
+        results[results$variable == col, "F1_score"] <- 0
       }
 
     }
