@@ -428,34 +428,30 @@ missForest <- function(xmis,
       }
     }
 
-    # check convergence
-    NMSE_err_new <- weighted.mean(OOB_err[OOB_err$iteration == iter,"NMSE"],
-                                  w = OOB_weights[impute_sequence])
-    if (iter == 1) {
-      # TODO: isn't this always 1?
-      NMSE_err_old <- weighted.mean(rep(1, length(impute_sequence)), w = OOB_weights[impute_sequence])
-    } else {
-      NMSE_err_old <- weighted.mean(OOB_err[OOB_err$iteration == iter - 1,"NMSE"],
-                                    w = OOB_weights[impute_sequence])
-    }
+    if (verbose) cat("done!\n")
 
-    #converged <- !(NMSE_err_new < NMSE_err_old | force)
-    converged <- NMSE_err_new >= NMSE_err_old & !force
+    # calculate convergence
+    convergence <- calculate_convergence(OOB_err = OOB_err,
+                                       OOB_weights = OOB_weights[impute_sequence],
+                                       ximp_new = ximp, ximp_old = ximp_old,
+                                       xmis = xmis)
+    converged <- convergence$converged
+
+    # TODO: at the end delete force
+    converged <- converged & !force
 
     # return error monitoring
     if (verbose){
       delta_start <- proc.time() - t_start
-      cat(sprintf("    OOB errors MSE:             %s\n",
+      cat(sprintf("    OOB errors MSE:            %s\n",
                   paste(round(OOB_err[OOB_err$iteration == iter,"MSE"], 10), collapse = ", ")))
-      cat(sprintf("    OOB errors NMSE:            %s\n",
+      cat(sprintf("    OOB errors NMSE:           %s\n",
                   paste(round(OOB_err[OOB_err$iteration == iter,"NMSE"], 10), collapse = ", ")))
-      cat(sprintf("    (weigthed) difference NMSE: %s\n",
-                  paste(round(NMSE_err_old - NMSE_err_new, 10), collapse = ", ")))
-      cat(sprintf("    time:                       %s seconds\n\n",
+      cat(sprintf("    diff. convergence measure: %s\n",
+                  paste(round(convergence$measure_old - convergence$measure_new, 10), collapse = ", ")))
+      cat(sprintf("    time:                      %s seconds\n\n",
                   round(delta_start[3], 10)))
     }
-
-    if (verbose) cat("done!\n")
 
     iter <- iter + 1
 
