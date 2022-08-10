@@ -38,7 +38,8 @@ evaluate_imputation_error <- function(ximp, xmis, xtrue, all = FALSE){
                         MSE = NA_real_,
                         NMSE = NA_real_,
                         MER = NA_real_,
-                        macro_F1 = NA_real_)
+                        macro_F1 = NA_real_,
+                        F1_score = NA_real_)
 
   # localize missing
   NAloc <- is.na(xmis)
