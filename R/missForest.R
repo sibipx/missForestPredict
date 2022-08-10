@@ -306,6 +306,14 @@ missForest <- function(xmis,
   err_NMSE <- data.frame(matrix(ncol = length(impute_sequence), nrow = 0))
   colnames(err_NMSE) <- impute_sequence
 
+  OOB_err <- data.frame(iteration = sort(rep(1:maxiter, length(impute_sequence))),
+                        variable = rep(impute_sequence, maxiter),
+                        MSE = NA_real_,
+                        NMSE = NA_real_,
+                        MER = NA_real_,
+                        macro_F1 = NA_real_,
+                        F1_score = NA_real_)
+
   iter <- 1
   convergence_criteria <- TRUE
   if (save_models) models <- list() else models <- NULL
@@ -362,15 +370,16 @@ missForest <- function(xmis,
                           col, dim(RF$predictions)[[1]] - sum(oob_i), dim(RF$predictions)[[1]]))
         }
 
-        # save the OOB error for convergence (NMSE)
-        if (var(ximp[obsi, col, drop = TRUE]) != 0){ # constant columns have 0 variance
-          err_NMSE[iter, col] <- RF$prediction.error / var(ximp[obsi, col, drop = TRUE])
-        } else {
-          err_NMSE[iter, col] <- 0 # TODO: is this the best thing?
-        }
+        # save OOB error
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <-
+          mse(RF$predictions[oob_i], obsY[oob_i])
 
-        # save the OOB error (MSE)
-        err_MSE[iter, col] <- mse(RF$predictions[oob_i], obsY[oob_i])
+        if (var(ximp[obsi, col, drop = TRUE]) != 0){ # constant columns have 0 variance
+          OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <-
+            RF$prediction.error / var(ximp[obsi, col, drop = TRUE])
+        } else {
+          OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <- 0 # TODO: is this the best thing?
+        }
 
       } else {
         obsY <- factor(obsY, levels = unique(ximp[, col, drop = TRUE]))
@@ -406,33 +415,53 @@ missForest <- function(xmis,
                           col, dim(RF$predictions)[[1]] - sum(oob_i), dim(RF$predictions)[[1]]))
         }
 
-        # save OOB error (NMSE)
-        err_NMSE[iter, col] <- BSnorm(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE])
-        # save OOB error (MSE = Brier score divided by number of categories)
-        err_MSE[iter, col] <- BS(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE]) /
+        # save OOB error
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <-
+          BS(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE]) /
           ncol(obsY_binary[oob_i, , drop = FALSE])
+
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <-
+          BSnorm(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE])
+
+
       }
     }
 
     if (verbose) cat("done!\n")
 
     # check convergence
-    NMSE_err_new <- weighted.mean(err_NMSE[iter,], w = OOB_weights)
+    NMSE_err_new <- weighted.mean(OOB_err[OOB_err$iteration == iter,"NMSE"],
+                                  w = OOB_weights[impute_sequence])
     if (iter == 1) {
-      NMSE_err_old <- weighted.mean(rep(1, length(vars_included_to_impute)), w = OOB_weights)
+      # TODO: isn't this always 1?
+      NMSE_err_old <- weighted.mean(rep(1, length(impute_sequence)), w = OOB_weights[impute_sequence])
     } else {
-      NMSE_err_old <- weighted.mean(err_NMSE[iter - 1,], w = OOB_weights)
+      NMSE_err_old <- weighted.mean(OOB_err[OOB_err$iteration == iter - 1,"NMSE"],
+                                    w = OOB_weights[impute_sequence])
     }
 
     convergence_criteria <- NMSE_err_new < NMSE_err_old | force
 
+
     # return error monitoring
+    # if (verbose){
+    #   delta_start <- proc.time() - t_start
+    #   cat(sprintf("    OOB errors MSE:             %s\n",
+    #               paste(round(err_MSE[iter,], 10), collapse = ", ")))
+    #   cat(sprintf("    OOB errors NMSE:            %s\n",
+    #               paste(round(err_NMSE[iter,], 10), collapse = ", ")))
+    #   cat(sprintf("    (weigthed) difference NMSE: %s\n",
+    #               paste(round(NMSE_err_old - NMSE_err_new, 10), collapse = ", ")))
+    #   cat(sprintf("    time:                       %s seconds\n\n",
+    #               round(delta_start[3], 10)))
+    # }
+
     if (verbose){
       delta_start <- proc.time() - t_start
       cat(sprintf("    OOB errors MSE:             %s\n",
-                  paste(round(err_MSE[iter,], 10), collapse = ", ")))
+                  paste(round(OOB_err[OOB_err$iteration == iter,"MSE"], 10), collapse = ", ")))
       cat(sprintf("    OOB errors NMSE:            %s\n",
-                  paste(round(err_NMSE[iter,], 10), collapse = ", ")))
+                  paste(round(OOB_err[OOB_err$iteration == iter,"NMSE"], 10), collapse = ", ")))
       cat(sprintf("    (weigthed) difference NMSE: %s\n",
                   paste(round(NMSE_err_old - NMSE_err_new, 10), collapse = ", ")))
       cat(sprintf("    time:                       %s seconds\n\n",
@@ -464,8 +493,9 @@ missForest <- function(xmis,
               return_integer_as_integer = return_integer_as_integer,
               integer_columns = integer_columns,
               predictor_matrix = predictor_matrix,
-              err_MSE = err_MSE,
-              err_NMSE = err_NMSE)
+              #err_MSE = err_MSE,
+              #err_NMSE = err_NMSE,
+              OOB_err = OOB_err)
 
   class(out) <- 'missForest'
   return(out)

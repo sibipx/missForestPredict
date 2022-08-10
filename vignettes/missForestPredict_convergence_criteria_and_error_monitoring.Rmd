@@ -91,9 +91,7 @@ iris_mis <- produce_NA(iris, proportion = 0.5)
 set.seed(2022)
 missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE)
 
-print(missForest_object$err_MSE)
-
-print(missForest_object$err_NMSE)
+print(missForest_object$OOB_err)
 
 ```
 
@@ -104,13 +102,9 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-col_names <- colnames(missForest_object$err_NMSE)
-
-missForest_object$err_NMSE %>% 
-  mutate(iteration = row_number()) %>% 
-  pivot_longer(cols = all_of(col_names),
-               values_to = "NMSE") %>% 
-  ggplot(aes(iteration, NMSE, col = name)) +
+missForest_object$OOB_err %>% 
+  filter(!is.na(NMSE)) %>% 
+  ggplot(aes(iteration, NMSE, col = variable)) +
   geom_point() +
   geom_line()
 
@@ -139,13 +133,9 @@ set.seed(2022)
 missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE)
 
 # plot convergence
-col_names <- colnames(missForest_object$err_NMSE)
-
-missForest_object$err_NMSE %>% 
-  mutate(iteration = row_number()) %>% 
-  pivot_longer(cols = all_of(col_names),
-               values_to = "NMSE") %>% 
-  ggplot(aes(iteration, NMSE, col = name)) +
+missForest_object$OOB_err %>% 
+  filter(!is.na(NMSE)) %>% 
+  ggplot(aes(iteration, NMSE, col = variable)) +
   geom_point() +
   geom_line()
 
@@ -160,13 +150,9 @@ missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE,
                                                    OOB_weights = setNames(rep(1, ncol(iris_mis)), colnames(iris_mis)))
 
 # plot convergence
-col_names <- colnames(missForest_object$err_NMSE)
-
-missForest_object$err_NMSE %>% 
-  mutate(iteration = row_number()) %>% 
-  pivot_longer(cols = all_of(col_names),
-               values_to = "NMSE") %>% 
-  ggplot(aes(iteration, NMSE, col = name)) +
+missForest_object$OOB_err %>% 
+  filter(!is.na(NMSE)) %>% 
+  ggplot(aes(iteration, NMSE, col = variable)) +
   geom_point() +
   geom_line()
 
