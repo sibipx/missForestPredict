@@ -308,7 +308,7 @@ missForest <- function(xmis,
                         F1_score = NA_real_)
 
   iter <- 1
-  convergence_criteria <- TRUE
+  converged <- FALSE
   if (save_models) models <- list() else models <- NULL
 
   if (verbose) {
@@ -322,7 +322,7 @@ missForest <- function(xmis,
   }
 
   # iterate RF models
-  while (convergence_criteria & iter <= maxiter){
+  while (!converged & iter <= maxiter){
 
     if (save_models) models[[iter]] <- list()
 
@@ -355,26 +355,7 @@ missForest <- function(xmis,
           ximp[misi, col] <- misY
         }
 
-        # check if all observations are out of bag
-        oob_i <- !is.na(RF$predictions)
-
-        if (sum(oob_i) != length(RF$predictions)){
-          warning(sprintf("For variable %s there are %s observations out of %s for which the OOB error cannot be evaluated. These observations are excluded. Consider increasing the number of trees (num.trees) to ensure reliable results",
-                          col, dim(RF$predictions)[[1]] - sum(oob_i), dim(RF$predictions)[[1]]))
-        }
-
-        # save OOB error
-        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <-
-          mse(RF$predictions[oob_i], obsY[oob_i])
-
-        if (var(ximp[obsi, col, drop = TRUE]) != 0){ # constant columns have 0 variance
-          OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <-
-            RF$prediction.error / var(ximp[obsi, col, drop = TRUE])
-        } else {
-          OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <- 0 # TODO: is this the best thing?
-        }
-
-      } else {
+      } else { # categorical
         obsY <- factor(obsY, levels = unique(ximp[, col, drop = TRUE]))
 
         RF <- ranger(x = obsX, y = obsY,
@@ -394,36 +375,55 @@ missForest <- function(xmis,
           # impute
           ximp[misi, col] <- apply(preds, 1, function(x) levels[which.max(x)])
         }
+      }
 
-        # save OOB error
+      # check if all observations in data are out-of-bag at least once
+      if (is.matrix(RF$predictions)){ # class probabilities are returned as matrix
+        oob_i <- !apply(is.na(RF$predictions), 1, any)
+      } else {
+        oob_i <- !is.na(RF$predictions)
+      }
+
+      if (sum(!oob_i) > 0){
+        warning(sprintf("For variable %s there are %s observations out of %s for which the OOB error cannot be evaluated. These observations are excluded. Consider increasing the number of trees (num.trees) to ensure reliable results",
+                        col, sum(!oob_i), length(obsY)))
+      }
+
+      # evaluate OOB error
+      if (var_type[col] == "numeric") {
+
+        OOB_MSE <- mse(RF$predictions[oob_i], obsY[oob_i])
+        OOB_NMSE <- ifelse(var(ximp[obsi, col, drop = TRUE]) == 0, 0, # TODO: is this the best thing?
+                           RF$prediction.error / var(ximp[obsi, col, drop = TRUE]))
+
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <- OOB_MSE
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <- OOB_NMSE
+
+      } else { # categorical
+
         # drop levels if they don't exist
         ximp_binary <- make_binary(factor(ximp[, col, drop = TRUE], levels = unique(ximp[, col, drop = TRUE])))
         col_order <- colnames(ximp_binary)
         obsY_binary <- ximp_binary[obsi, , drop = FALSE]
 
-        # predictions can be NaN when some observations are never out-of-bag
-        oob_i <- !apply(is.na(RF$predictions), 1, any)
-        if (sum(oob_i) != dim(RF$predictions)[[1]]){
-          warning(sprintf("For variable %s there are %s observations out of %s for which the OOB error cannot be evaluated. These observations are excluded. Consider increasing the number of trees (num.trees) to ensure reliable results",
-                          col, dim(RF$predictions)[[1]] - sum(oob_i), dim(RF$predictions)[[1]]))
-        }
-
-        # save OOB error for probability prediction
-        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <-
-          BS(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE]) /
+        OOB_MSE <- BS(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE]) /
           ncol(obsY_binary[oob_i, , drop = FALSE])
-
-        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <-
-          BSnorm(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE])
+        OOB_NMSE <- BSnorm(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE])
 
         # save OOB error for class predictions
         OOB_preds <- RF$predictions[oob_i, col_order, drop = FALSE]
         OOB_levels <- colnames(OOB_preds)
         OOB_class_preds <- apply(OOB_preds, 1, function(x) OOB_levels[which.max(x)])
 
-        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MER"] <- mer(OOB_class_preds, obsY[oob_i])
-        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "macro_F1"] <- macro_F1(OOB_class_preds, obsY[oob_i])
-        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "F1_score"] <- F1_score(OOB_class_preds, obsY[oob_i])
+        OOB_MER <- mer(OOB_class_preds, obsY[oob_i])
+        OOB_macro_F1 <- macro_F1(OOB_class_preds, obsY[oob_i]) # calculated only for multi-class
+        OOB_F1 <- F1_score(OOB_class_preds, obsY[oob_i]) # calculated only for two-class
+
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <- OOB_MSE
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <- OOB_NMSE
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MER"] <- OOB_MER
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "macro_F1"] <- OOB_macro_F1
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "F1_score"] <- OOB_F1
 
       }
     }
@@ -439,7 +439,8 @@ missForest <- function(xmis,
                                     w = OOB_weights[impute_sequence])
     }
 
-    convergence_criteria <- NMSE_err_new < NMSE_err_old | force
+    #converged <- !(NMSE_err_new < NMSE_err_old | force)
+    converged <- NMSE_err_new >= NMSE_err_old & !force
 
     # return error monitoring
     if (verbose){
@@ -469,7 +470,7 @@ missForest <- function(xmis,
   }
 
   # output
-  if (iter != maxiter & !convergence_criteria) ximp <- ximp_old
+  if (iter != maxiter & converged) ximp <- ximp_old
 
   out <- list(ximp = ximp,
               init = var_init,
