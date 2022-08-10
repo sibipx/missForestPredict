@@ -51,6 +51,7 @@
 #' will be filtered from the predictor matrix. Variables for which \code{p_miss} is lower than or equal to 0 (by default)
 #' will be filtered from the predictor matrix. For more details on \code{p_obs} and \code{p_miss} see the documentation for
 #' the \code{prop_usable_cases} function. If parameter \code{predictor_matrix} is specified, \code{proportion_usable_cases} will be ignored.
+#' TODO: this is not true, I am undecided.
 #' @param verbose (boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported).
 #' See vignette for \code{num.trees} example.
@@ -123,30 +124,28 @@ missForest <- function(xmis,
   }
 
   # calculate proportion of usable cases
-  if (is.null(predictor_matrix)){
+  prop_usable_cases <- prop_usable_cases(xmis)
 
-    prop_usable_cases <- prop_usable_cases(xmis)
+  p_obs <- proportion_usable_cases[[1]]
+  p_mis <- proportion_usable_cases[[2]]
 
-    p_obs <- proportion_usable_cases[[1]]
-    p_mis <- proportion_usable_cases[[2]]
-
-    prop_usable_cases_matrix_obs <- prop_usable_cases$p_obs < p_obs
-    prop_usable_cases_matrix_miss <- prop_usable_cases$p_miss > p_mis
-    # make diagonal always FALSE (do not include a var as predictor for itself)
-    diag(prop_usable_cases_matrix_miss) <- FALSE
-    # inclusion matrix
-    usable_cases_matrix <- prop_usable_cases_matrix_obs & prop_usable_cases_matrix_miss
-    usable_cases_matrix[is.na(usable_cases_matrix)] <- TRUE
-    usable_cases_matrix <- usable_cases_matrix + 0
-  }
+  prop_usable_cases_matrix_obs <- prop_usable_cases$p_obs < p_obs
+  prop_usable_cases_matrix_miss <- prop_usable_cases$p_miss > p_mis
+  # make diagonal always FALSE (do not include a var as predictor for itself)
+  diag(prop_usable_cases_matrix_miss) <- FALSE
+  # inclusion matrix
+  usable_cases_matrix <- prop_usable_cases_matrix_obs & prop_usable_cases_matrix_miss
+  usable_cases_matrix[is.na(usable_cases_matrix)] <- TRUE
+  usable_cases_matrix <- usable_cases_matrix + 0
 
   # prepare predictor matrix
   if (!is.null(predictor_matrix)){
     check_predictor_matrix(predictor_matrix, xmis, verbose = FALSE)
   } else {
     predictor_matrix <- create_predictor_matrix(xmis)
-    predictor_matrix <- (predictor_matrix & usable_cases_matrix) + 0
   }
+
+  predictor_matrix <- (predictor_matrix & usable_cases_matrix) + 0
 
   # variables included / skipped from imputation
   vars_skipped_to_impute <- rownames(predictor_matrix)[rowSums(predictor_matrix) == 0]
@@ -418,8 +417,8 @@ missForest <- function(xmis,
           BSnorm(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE])
 
         # save OOB error for class predictions
-        OOB_preds <- RF$predictions[oob_i,col_order]
-        OOB_levels <- colnames(preds)
+        OOB_preds <- RF$predictions[oob_i, col_order, drop = FALSE]
+        OOB_levels <- colnames(OOB_preds)
         OOB_class_preds <- apply(OOB_preds, 1, function(x) OOB_levels[which.max(x)])
 
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MER"] <- mer(OOB_class_preds, obsY[oob_i])
@@ -428,8 +427,6 @@ missForest <- function(xmis,
 
       }
     }
-
-    if (verbose) cat("done!\n")
 
     # check convergence
     NMSE_err_new <- weighted.mean(OOB_err[OOB_err$iteration == iter,"NMSE"],
@@ -456,6 +453,8 @@ missForest <- function(xmis,
       cat(sprintf("    time:                       %s seconds\n\n",
                   round(delta_start[3], 10)))
     }
+
+    if (verbose) cat("done!\n")
 
     iter <- iter + 1
 
