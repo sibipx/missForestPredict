@@ -64,8 +64,7 @@
 #'     \item{\code{models}}{list of random forest models for each iteration}
 #'     \item{\code{return_integer_as_integer}}{Parameter return_integer_as_integer as passed to the function}
 #'     \item{\code{integer_columns}}{list of columns of integer type in the data}
-#'     \item{\code{err_MSE}}{dataframe with MSE (mean square error) values for each iteration and each variable}
-#'     \item{\code{err_NMSE}}{dataframe with NMSE (normalized mean square error) values for each iteration and each variable}
+#'     \item{\code{OOB_err}}{dataframe with out-of-bag errors for each iteration and each variable}
 #' @references
 #' \itemize{
 #'     \item Stekhoven, D. J., & Bühlmann, P. (2012). MissForest-non-parametric missing value imputation for mixed-type data. Bioinformatics, 28(1), 112-118. \doi{10.1093/bioinformatics/btr597}
@@ -300,12 +299,7 @@ missForest <- function(xmis,
     }
   }
 
-  # keep MSE and NMSE
-  err_MSE <- data.frame(matrix(ncol = length(impute_sequence), nrow = 0))
-  colnames(err_MSE) <- impute_sequence
-  err_NMSE <- data.frame(matrix(ncol = length(impute_sequence), nrow = 0))
-  colnames(err_NMSE) <- impute_sequence
-
+  # keep OOB error
   OOB_err <- data.frame(iteration = sort(rep(1:maxiter, length(impute_sequence))),
                         variable = rep(impute_sequence, maxiter),
                         MSE = NA_real_,
@@ -415,7 +409,7 @@ missForest <- function(xmis,
                           col, dim(RF$predictions)[[1]] - sum(oob_i), dim(RF$predictions)[[1]]))
         }
 
-        # save OOB error
+        # save OOB error for probability prediction
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <-
           BS(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE]) /
           ncol(obsY_binary[oob_i, , drop = FALSE])
@@ -423,6 +417,14 @@ missForest <- function(xmis,
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <-
           BSnorm(RF$predictions[oob_i,col_order], obsY_binary[oob_i, , drop = FALSE])
 
+        # save OOB error for class predictions
+        OOB_preds <- RF$predictions[oob_i,col_order]
+        OOB_levels <- colnames(preds)
+        OOB_class_preds <- apply(OOB_preds, 1, function(x) OOB_levels[which.max(x)])
+
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MER"] <- mer(OOB_class_preds, obsY[oob_i])
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "macro_F1"] <- macro_F1(OOB_class_preds, obsY[oob_i])
+        OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "F1_score"] <- F1_score(OOB_class_preds, obsY[oob_i])
 
       }
     }
@@ -442,20 +444,7 @@ missForest <- function(xmis,
 
     convergence_criteria <- NMSE_err_new < NMSE_err_old | force
 
-
     # return error monitoring
-    # if (verbose){
-    #   delta_start <- proc.time() - t_start
-    #   cat(sprintf("    OOB errors MSE:             %s\n",
-    #               paste(round(err_MSE[iter,], 10), collapse = ", ")))
-    #   cat(sprintf("    OOB errors NMSE:            %s\n",
-    #               paste(round(err_NMSE[iter,], 10), collapse = ", ")))
-    #   cat(sprintf("    (weigthed) difference NMSE: %s\n",
-    #               paste(round(NMSE_err_old - NMSE_err_new, 10), collapse = ", ")))
-    #   cat(sprintf("    time:                       %s seconds\n\n",
-    #               round(delta_start[3], 10)))
-    # }
-
     if (verbose){
       delta_start <- proc.time() - t_start
       cat(sprintf("    OOB errors MSE:             %s\n",
@@ -493,8 +482,6 @@ missForest <- function(xmis,
               return_integer_as_integer = return_integer_as_integer,
               integer_columns = integer_columns,
               predictor_matrix = predictor_matrix,
-              #err_MSE = err_MSE,
-              #err_NMSE = err_NMSE,
               OOB_err = OOB_err)
 
   class(out) <- 'missForest'
