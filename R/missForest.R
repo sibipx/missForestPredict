@@ -344,7 +344,7 @@ missForest <- function(xmis,
 
       if (var_type[col] == "numeric") {
 
-        RF <- ranger(x = obsX, y = obsY, ...)
+        RF <- ranger(x = obsX, y = obsY, respect.unordered.factors = "order", ...)
 
         # save model
         if (save_models) models[[iter]][[col]] <- RF
@@ -360,6 +360,7 @@ missForest <- function(xmis,
 
         RF <- ranger(x = obsX, y = obsY,
                      probability = TRUE,
+                     respect.unordered.factors = "order",
                      class.weights = class.weights[[col]][levels(obsY)],
                      ...)
 
