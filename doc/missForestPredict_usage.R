@@ -323,3 +323,21 @@ head(iris_test_imp)
 check_predictor_matrix(predictor_matrix, iris_train)
 
 
+## -----------------------------------------------------------------------------
+
+data(iris)
+
+iris_mis <- iris
+iris_mis[1:50, "Sepal.Length"] <- NA
+iris_mis[1:50, "Sepal.Width"] <- NA
+iris_mis[51:150, "Petal.Length"] <- NA
+
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_mis, save_models = TRUE, 
+                                                       verbose = TRUE)
+
+print(iris_train_imp_object$predictor_matrix)
+
+check_predictor_matrix(iris_train_imp_object$predictor_matrix, iris_mis, verbose = TRUE)
+
+

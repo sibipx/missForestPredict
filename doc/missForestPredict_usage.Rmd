@@ -49,10 +49,6 @@ The normalized mean squared error is used for both continuous and categorical va
 
 More information on convergence criteria and error monitoring is provided in a separate vignette.
 
-**Extended options for binary variables**
-
-TODO. (This might prove useful in imputation of sparse binary variables.)
-
 **Support for dataframe and tibble**
 
 Both dataframe (`data.frame` class) and tibble (`tbl_df` class) are supported as input for the package functions. Currently matrix input is not supported.
@@ -335,7 +331,7 @@ By default, missForest will create models for all variables in a dataframe and w
 
 ### Variables not imputed and not used as predictor
 
-We consider the case when a date variable is kept in the dataframe for further reference. Such vriable does not need imputation, nor can be used as predictor.
+We consider the case when a date variable is kept in the dataframe for further reference. Such variable does not need imputation, nor can be used as predictor.
 
 ```{r}
 data(iris)
@@ -504,11 +500,38 @@ check_predictor_matrix(predictor_matrix, iris_train)
 
 ```
 
+### Impact of `proportion_usable_cases` on the predictor matrix
+
+The default predictor matrix can be altered by the setting of `proportion_usable_cases`. 
+
+missForest initializes each variable and then builds models for each variable using the observed values of that variable as outcome of a random forest model. It then imputes the missing part of the variable using the learned models. Situations when a variable is mostly or completely missing for the observed part of another variable are suboptimal for learning the models, as the models will mostly rely on the initialization rather than on true values. Situations when a variable is missing for the missing part of another variable are suboptimal for the imputation (prediction) part as the predictions will rely on the initialization rather than on true values. By default `proportion_usable_cases` will filter the variables (as predictors) if they are completely missing for the observed or missing part of another variable.
+
+As an example, we will make `Sepal.Length` and `Sepal.Width` in `iris` missing together and `Petal.Length` missing for the observed part of these variables. Checking the predictor matrix post imputation will reveal that these variables will not be used as predictor for each other because of the "sub-optimal" missingness pattern.
+
+```{r}
+
+data(iris)
+
+iris_mis <- iris
+iris_mis[1:50, "Sepal.Length"] <- NA
+iris_mis[1:50, "Sepal.Width"] <- NA
+iris_mis[51:150, "Petal.Length"] <- NA
+
+set.seed(2022)
+iris_train_imp_object <- missForestPredict::missForest(iris_mis, save_models = TRUE, 
+                                                       verbose = TRUE)
+
+print(iris_train_imp_object$predictor_matrix)
+
+check_predictor_matrix(iris_train_imp_object$predictor_matrix, iris_mis, verbose = TRUE)
+
+```
+
 # Final words
 
 The package `missForestPredict` is based on the `missForest` package [@stekhoven2012missforest] with additional functionality for convergence criteria, initialization and imputation of new observations.
 
-Other imputation packages based on random forests are available in the R ecosystem, using iterative algorithms, like `missRanger` [@mayer2019package], `mice` [@van2007mice], `CALIBERrfimpute` [@shah2021package], `miceRanger` [@wilson2020miceranger]. These provide various extended functionality, but they do not support the imputation of new observations. Non-iterative algorithms are also available: the function `rfImpute` in the `randomForest` [@randomForestPackage] package requires presence of the outcome at imputation time, which makes it inadequate for prediction settings (where imputation for a single new observation for which the outcome is not yet know may be of interest); `caret` [@kuhn2008caret] implements bagged trees without iterations and will impute new observations for most missingness patterns; `imputeMissings` implements random forests non-iteratively but the initialization is not learned on the training set and will require a test set for initialization.
+Other imputation packages based on random forests are available in the R ecosystem, using iterative algorithms, like `missRanger` [@mayer2019package], `mice` [@van2007mice], `CALIBERrfimpute` [@shah2021package], `miceRanger` [@wilson2020miceranger]. These provide various extended functionality, but they do not support the imputation of new observations, with the exception of `miceRanger` [@wilson2020miceranger] which, to our knowledge, is the only iterative algorithm that can impute new observations. Non-iterative algorithms are also available: the function `rfImpute` in the `randomForest` [@randomForestPackage] package requires presence of the outcome at imputation time, which makes it inadequate for prediction settings (where imputation for a single new observation for which the outcome is not yet know may be of interest); `caret` [@kuhn2008caret] implements bagged trees without iterations and will impute new observations for most missingness patterns; `imputeMissings` implements random forests non-iteratively but the initialization is not learned on the training set and will require a test set for initialization.
 
 The R package `missForestPredict` uses an iterative algorithm and can impute a single new observation in (applied) prediction settings, even when the new observation exhibits a missingness pattern not encountered in the training set. It is therefore suitable for (applied) prediction settings.
 

@@ -97,6 +97,7 @@ missForest <- function(xmis,
                        save_models = FALSE,
                        predictor_matrix = NULL,
                        proportion_usable_cases = c(1,0),
+                       on_the_fly = FALSE,
                        verbose = TRUE,
                        ...){
 
@@ -109,6 +110,8 @@ missForest <- function(xmis,
   if (length(unsupported_args) > 0){
     stop(sprintf("The following argument(s) to ranger function are not supported: %s", paste(unsupported_args, collapse = ", ")))
   }
+
+  if (!is.numeric(maxiter) |  maxiter < 1) stop("maxiter need to be greater than 1")
 
   if (!initialization %in% c("mean/mode", "median/mode", "custom"))
     stop("initialization has to be mean/mode, median/mode or custom")
@@ -331,6 +334,7 @@ missForest <- function(xmis,
     t_start <- proc.time()
     # TODO: is it possible not to store this?
     ximp_old <- ximp
+    ximp_later <- ximp
 
     for (col in impute_sequence){
 
@@ -353,7 +357,11 @@ missForest <- function(xmis,
         # if the column is not complete, impute the missing values
         if (nrow(misX) > 0) {
           misY <- predict(RF, misX)$predictions
-          ximp[misi, col] <- misY
+          if (on_the_fly){
+            ximp[misi, col] <- misY
+          } else {
+            ximp_later[misi, col] <- misY
+          }
         }
 
       } else { # categorical
@@ -374,7 +382,11 @@ missForest <- function(xmis,
           levels <- colnames(preds)
 
           # impute
-          ximp[misi, col] <- apply(preds, 1, function(x) levels[which.max(x)])
+          if (on_the_fly){
+            ximp[misi, col] <- apply(preds, 1, function(x) levels[which.max(x)])
+          } else {
+            ximp_later[misi, col] <- apply(preds, 1, function(x) levels[which.max(x)])
+          }
         }
       }
 
@@ -394,8 +406,8 @@ missForest <- function(xmis,
       if (var_type[col] == "numeric") {
 
         OOB_MSE <- mse(RF$predictions[oob_i], obsY[oob_i])
-        OOB_NMSE <- ifelse(var(ximp[obsi, col, drop = TRUE]) == 0, 0, # TODO: is this the best thing?
-                           RF$prediction.error / var(ximp[obsi, col, drop = TRUE]))
+        OOB_NMSE <- ifelse(var(obsY[oob_i]) == 0, 0, # TODO: is this the best thing?
+                           nmse(RF$predictions[oob_i], obsY[oob_i]))
 
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <- OOB_MSE
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <- OOB_NMSE
@@ -429,13 +441,15 @@ missForest <- function(xmis,
       }
     }
 
+    if (!on_the_fly) ximp <- ximp_later
+
     if (verbose) cat("done!\n")
 
     # calculate convergence
     convergence <- calculate_convergence(OOB_err = OOB_err,
-                                       OOB_weights = OOB_weights[impute_sequence],
-                                       ximp_new = ximp, ximp_old = ximp_old,
-                                       xmis = xmis)
+                                         OOB_weights = OOB_weights[impute_sequence],
+                                         ximp_new = ximp, ximp_old = ximp_old,
+                                         xmis = xmis)
     converged <- convergence$converged
 
     # TODO: at the end delete force
