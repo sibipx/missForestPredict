@@ -98,7 +98,6 @@ missForest <- function(xmis,
                        predictor_matrix = NULL,
                        proportion_usable_cases = c(1,0),
                        on_the_fly = FALSE,
-                       use_CV = FALSE,
                        verbose = TRUE,
                        ...){
 
@@ -274,29 +273,6 @@ missForest <- function(xmis,
     }
   }
 
-  if (use_CV){
-    # split train / test
-    N_total <- nrow(xmis)
-    frac_test <- 1/3
-    n_test <- floor(N_total * frac_test)
-    id_test <- sample(1:nrow(xmis), n_test)
-
-    ximp_full <- ximp
-    xmis_full <- xmis
-
-    # train
-    xmis <- xmis[-id_test,]
-    ximp <- ximp[-id_test,]
-
-    # test
-    xmis_test <- xmis_full[id_test,]
-    ximp_test <- ximp_full[id_test,]
-
-    NAloc_full <- is.na(xmis_full)
-    NAloc_test <- is.na(xmis_test)
-
-  }
-
   # extract missingness pattern
   NAloc <- is.na(xmis)            # where are missings
   noNAvar <- apply(NAloc, 2, sum) # how many are missing in the vars
@@ -360,12 +336,6 @@ missForest <- function(xmis,
     ximp_old <- ximp
     ximp_later <- ximp
 
-    if(use_CV){
-      ximp_full_old <- ximp_full
-      # ximp_later <- ximp
-      # TODO the later one
-    }
-
     for (col in impute_sequence){
 
       obsi <- !NAloc[, col]
@@ -392,27 +362,6 @@ missForest <- function(xmis,
           } else {
             ximp_later[misi, col] <- misY
           }
-        }
-
-        if (use_CV) {
-
-          # impute full
-          misi_full <- NAloc_full[, col]
-          misX_full <- ximp_full[misi_full, predictor_cols]
-
-          if (nrow(misX_full) > 0) {
-            misY_full <- predict(RF, misX_full)$predictions
-            if (on_the_fly){
-              ximp_full[misi_full, col] <- misY_full
-            } else {
-              ximp_full_later[misi_full, col] <- misY_full
-              # TODO make not on the fly work
-              # TODO implement for categorical
-            }
-          }
-
-
-
         }
 
       } else { # categorical
@@ -456,41 +405,6 @@ missForest <- function(xmis,
       # evaluate OOB error
       if (var_type[col] == "numeric") {
 
-        # TODO: implement for categorical
-        if (use_CV){
-          # predict on test
-
-          # impute test
-          misi_test <- NAloc_test[, col]
-          misX_test <- ximp_test[misi_test, predictor_cols]
-
-          if (nrow(misX_test) > 0) {
-            misY_test <- predict(RF, misX_test)$predictions
-            if (on_the_fly){
-              ximp_test[misi_test, col] <- misY_test
-            } else {
-              ximp_test_later[misi_test, col] <- misY_test
-              # TODO make not on the fly work
-              # TODO implement for categorical
-            }
-          }
-
-          # observed test
-          obsi_test <- !NAloc_test[, col]
-          obsY_test <- ximp_test[obsi_test, col, drop = TRUE]
-          obsX_test <- ximp_test[obsi_test, predictor_cols]
-
-          obsY_test_preds <- predict(RF, obsX_test)$predictions
-
-          OOB_MSE <- mse(obsY_test_preds, obsY_test)
-          OOB_NMSE <- nmse(obsY_test_preds, obsY_test)
-          # TODO: if else...
-
-          OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <- OOB_MSE
-          OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <- OOB_NMSE
-          # TODO: this is common get out of if else
-
-        } else {
 
         OOB_MSE <- mse(RF$predictions[oob_i], obsY[oob_i])
         OOB_NMSE <- ifelse(var(obsY[oob_i]) == 0, 0, # TODO: is this the best thing?
@@ -498,7 +412,7 @@ missForest <- function(xmis,
 
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <- OOB_MSE
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <- OOB_NMSE
-        }
+
 
       } else { # categorical
 
@@ -534,19 +448,11 @@ missForest <- function(xmis,
     if (verbose) cat("done!\n")
 
     # calculate convergence
-    if (use_CV){
-      convergence <- calculate_convergence(OOB_err = OOB_err,
-                                           OOB_weights = OOB_weights[impute_sequence],
-                                           ximp_new = ximp_test, ximp_old = ximp_old,
-                                           xmis = xmis_test)
-      # TODO: not used dataframes
-    }
-    else {
     convergence <- calculate_convergence(OOB_err = OOB_err,
                                          OOB_weights = OOB_weights[impute_sequence],
                                          ximp_new = ximp, ximp_old = ximp_old,
                                          xmis = xmis)
-    }
+
     converged <- convergence$converged
 
     # TODO: at the end delete force
@@ -577,19 +483,8 @@ missForest <- function(xmis,
                                           function(x) as.integer(round(x)))
   }
 
-  # TODO: integer for use_CV
-
   # output
-  if (use_CV){
-    if (iter != maxiter & converged) {
-      ximp <- ximp_full_old
-      ximp <- ximp_full_old}
-    else if (converged) {
-      ximp <- ximp_full
-    }
-  } else {
-    if (iter != maxiter & converged) ximp <- ximp_old
-  }
+  if (iter != maxiter & converged) ximp <- ximp_old
 
   out <- list(ximp = ximp,
               init = var_init,
