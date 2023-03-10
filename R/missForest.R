@@ -343,8 +343,8 @@ missForest <- function(xmis,
       obsY <- ximp[obsi, col, drop = TRUE]
 
       predictor_cols <- colnames(predictor_matrix)[predictor_matrix[col,] == 1]
-      obsX <- ximp[obsi, predictor_cols]
-      misX <- ximp[misi, predictor_cols]
+      obsX <- ximp[obsi, predictor_cols, drop = FALSE]
+      misX <- ximp[misi, predictor_cols, drop = FALSE]
 
       if (var_type[col] == "numeric") {
 
