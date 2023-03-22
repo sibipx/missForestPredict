@@ -129,6 +129,9 @@ F1_score_per_class <- function (prediction, y) {
   recall <- diag(cm) / rowSums(cm)
   F1_score <-  ifelse(precision + recall == 0, 0, 2 * precision * recall / (precision + recall))
 
+  # if denominator is 0 make 0
+  F1_score[is.na(F1_score)] <- 0
+
   return(F1_score)
 
 }
