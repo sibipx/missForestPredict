@@ -32,7 +32,8 @@
 #' By default the weights are set to the proportion of missing values on each variable.
 #' @param decreasing (boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values.
 #' (the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.
-#' @param force TODO: this is used by me for comparison tests; will be removed at the end.
+#' @param fixed_maxiter if set to TRUE, the algorithm will run for the exact number of iterations specified in maxiter,
+#' regardless of the convergence criteria. Default is FALSE.
 #' @param initialization initialization method before running RF models; supported: mean/mode, median/mode and custom. Default is mean/mode.
 #' @param x_init if \code{initialization = custom}; a complete dataframe to be used as initialization (see vignette for example).
 #' @param class.weights a named list containing \code{class.weights} parameter to be passed to ranger for categorical variables.
@@ -87,9 +88,9 @@
 
 missForest <- function(xmis,
                        maxiter = 10,
+                       fixed_maxiter = FALSE,
                        OOB_weights = NULL,
                        decreasing = FALSE,
-                       force = FALSE,
                        initialization = "mean/mode",
                        x_init = NULL,
                        class.weights = NULL,
@@ -97,7 +98,7 @@ missForest <- function(xmis,
                        save_models = FALSE,
                        predictor_matrix = NULL,
                        proportion_usable_cases = c(1,0),
-                       on_the_fly = FALSE,
+                       on_the_fly = TRUE,
                        verbose = TRUE,
                        ...){
 
@@ -455,8 +456,8 @@ missForest <- function(xmis,
 
     converged <- convergence$converged
 
-    # TODO: at the end delete force
-    converged <- converged & !force
+    # if the maxiter is fixed, ignore the convergence criteria
+    converged <- converged & !fixed_maxiter
 
     # return error monitoring
     if (verbose){

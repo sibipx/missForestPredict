@@ -7,9 +7,9 @@
 missForest(
   xmis,
   maxiter = 10,
+  fixed_maxiter = FALSE,
   OOB_weights = NULL,
   decreasing = FALSE,
-  force = FALSE,
   initialization = "mean/mode",
   x_init = NULL,
   class.weights = NULL,
@@ -17,6 +17,7 @@ missForest(
   save_models = FALSE,
   predictor_matrix = NULL,
   proportion_usable_cases = c(1, 0),
+  on_the_fly = TRUE,
   verbose = TRUE,
   ...
 )
@@ -26,6 +27,9 @@ missForest(
 
 \item{maxiter}{maximum number of iterations}
 
+\item{fixed_maxiter}{if set to TRUE, the algorithm will run for the exact number of iterations specified in maxiter,
+regardless of the convergence criteria. Default is FALSE.}
+
 \item{OOB_weights}{named vector of weights for each variable in the convergence criteria.
 The names should correspond to variable names. If predictor_matrix is used, it is sufficient to specify the
 variables for which imputation needs to be done (have rowsum in the matrix > 0).
@@ -33,8 +37,6 @@ By default the weights are set to the proportion of missing values on each varia
 
 \item{decreasing}{(boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values.
 (the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.}
-
-\item{force}{TODO: this is used by me for comparison tests; will be removed at the end.}
 
 \item{initialization}{initialization method before running RF models; supported: mean/mode, median/mode and custom. Default is mean/mode.}
 
@@ -59,7 +61,8 @@ See documentation for function \code{create_predictor_matrix} for details on the
 and the second one is a maximum threshold for \code{p_miss}. Variables for which \code{p_obs} is greater than or equal to 1 (by default)
 will be filtered from the predictor matrix. Variables for which \code{p_miss} is lower than or equal to 0 (by default)
 will be filtered from the predictor matrix. For more details on \code{p_obs} and \code{p_miss} see the documentation for
-the \code{prop_usable_cases} function. If parameter \code{predictor_matrix} is specified, \code{proportion_usable_cases} will be ignored.}
+the \code{prop_usable_cases} function. If parameter \code{predictor_matrix} is specified, \code{proportion_usable_cases} will be ignored.
+TODO: this is not true, I am undecided.}
 
 \item{verbose}{(boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.}
 
@@ -76,8 +79,7 @@ Object of class \code{missForest} with elements
     \item{\code{models}}{list of random forest models for each iteration}
     \item{\code{return_integer_as_integer}}{Parameter return_integer_as_integer as passed to the function}
     \item{\code{integer_columns}}{list of columns of integer type in the data}
-    \item{\code{err_MSE}}{dataframe with MSE (mean square error) values for each iteration and each variable}
-    \item{\code{err_NMSE}}{dataframe with NMSE (normalized mean square error) values for each iteration and each variable}
+    \item{\code{OOB_err}}{dataframe with out-of-bag errors for each iteration and each variable}
 }
 \description{
 Imputes a dataframe and returns imputation models to be used on new observations.
