@@ -27,7 +27,7 @@ For basic usage of the `missForestPredict` package read the *Using the missFores
 
 ## Convergence criteria
 
-`missForestPredict` imputes each variable in a dataset in an iterative fashion, using an adapted version of the `misForest` algorithm [@stekhoven2012missforest]. At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the `OOB_weights` parameter. By default the weight of each variable in the convergence criteria is set to the proportion of missing values in the dataset. 
+`missForestPredict` imputes each variable in a dataset in an iterative fashion, using an adapted version of the `misForest` algorithm [@stekhoven2012missforest]. At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the `var_weights` parameter. By default the weight of each variable in the convergence criteria is set to the proportion of missing values in the dataset. 
 
 The normalized mean square error (NMSE) is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score).
 
@@ -112,7 +112,7 @@ missForest_object$OOB_err %>%
 
 ## Use weighted average in convergence
 
-The convergence of the algorithm is based on the a weighted average of the OOB NMSE for each variable. The weights are proportional to the proportion of missing values in the dataset. There can be situations when this in not the optimal choice. The weights for each variable can be adjusted via the `OOB_weights` parameter. In the following example we will create different proportion of missing values for each variable and adjust the weights to be equal.
+The convergence of the algorithm is based on the a weighted average of the OOB NMSE for each variable. The weights are proportional to the proportion of missing values in the dataset. There can be situations when this in not the optimal choice. The weights for each variable can be adjusted via the `var_weights` parameter. In the following example we will create different proportion of missing values for each variable and adjust the weights to be equal.
 
 We will create missing values only on the last two variables (Petal.Width and Species) and first run the imputation with the default setting. Keep in mind that `missForestPredict` builds models for all variables in the dataset, regardless of the missingness rate. Models will be built also for variables that are complete. Their weight will be zero in the convergence criteria, but imputation models will still be stored for these variables and can be later used on new observations; if unexpectedly missing values will occur in your test set, these will be imputed using these learned models.
 
@@ -147,7 +147,7 @@ We will further adapt the weights to be equal. You can observe that the results 
 
 set.seed(2022)
 missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE, 
-                                                   OOB_weights = setNames(rep(1, ncol(iris_mis)), colnames(iris_mis)))
+                                                   var_weights = setNames(rep(1, ncol(iris_mis)), colnames(iris_mis)))
 
 # plot convergence
 missForest_object$OOB_err %>% 

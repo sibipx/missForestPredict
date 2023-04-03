@@ -8,7 +8,7 @@ missForest(
   xmis,
   maxiter = 10,
   fixed_maxiter = FALSE,
-  OOB_weights = NULL,
+  var_weights = NULL,
   decreasing = FALSE,
   initialization = "mean/mode",
   x_init = NULL,
@@ -18,6 +18,7 @@ missForest(
   predictor_matrix = NULL,
   proportion_usable_cases = c(1, 0),
   verbose = TRUE,
+  convergence_error = "OOB",
   ...
 )
 }
@@ -29,7 +30,7 @@ missForest(
 \item{fixed_maxiter}{if set to TRUE, the algorithm will run for the exact number of iterations specified in maxiter,
 regardless of the convergence criteria. Default is FALSE.}
 
-\item{OOB_weights}{named vector of weights for each variable in the convergence criteria.
+\item{var_weights}{named vector of weights for each variable in the convergence criteria.
 The names should correspond to variable names. If predictor_matrix is used, it is sufficient to specify the
 variables for which imputation needs to be done (have rowsum in the matrix > 0).
 By default the weights are set to the proportion of missing values on each variable.}
@@ -64,6 +65,9 @@ the \code{prop_usable_cases} function. If parameter \code{predictor_matrix} is s
 TODO: this is not true, I am undecided.}
 
 \item{verbose}{(boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.}
+
+\item{convergence_error}{Which error should be used for the convergence criterion. Supported values: OOB and apparent.
+If a different value is provided, it defaults to OOB.}
 
 \item{...}{other arguments passed to ranger function (some arguments that are specific to each variable type are not supported).
 See vignette for \code{num.trees} example.}

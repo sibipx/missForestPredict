@@ -4,18 +4,12 @@
 \alias{calculate_convergence}
 \title{Calculates convergence based on NMSE}
 \usage{
-calculate_convergence(OOB_err, OOB_weights, ximp_new, ximp_old, xmis)
+calculate_convergence(err, weights)
 }
 \arguments{
-\item{OOB_err}{dataframe containing OOB errors for each iteration.}
+\item{err}{dataframe containing OOB or apparent errors for each iteration.}
 
-\item{OOB_weights}{vector of weights in the same format as for the \code{missForest} function.}
-
-\item{ximp_new}{imputed dataframe of current iteration}
-
-\item{ximp_old}{imputed dataframe of previous iteration}
-
-\item{xmis}{the original dataframe containing missing values.}
+\item{weights}{vector of weights in the same format as for the \code{missForest} function.}
 }
 \value{
 A list with elements
@@ -24,5 +18,5 @@ A list with elements
     \item{\code{measure_new}}{new measure: TODO: will this work?}
 }
 \description{
-Calculates convergence based on NMSE. TODO: blabla
+Calculates convergence based on NMSE.
 }

@@ -43,7 +43,7 @@ The models are applied iteratively to "predict" the missing values of each varia
 
 **Convergence criteria**
 
-At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the `OOB_weights` parameter. By default the weights are set to the proportion of missing values of each variable. 
+At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the `var_weights` parameter. By default the weights are set to the proportion of missing values of each variable. 
 
 The normalized mean squared error is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score) [@brier1950verification].
 

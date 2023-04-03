@@ -1,12 +1,9 @@
 #' Calculates convergence based on NMSE
 #'
-#' Calculates convergence based on NMSE. TODO: blabla
+#' Calculates convergence based on NMSE.
 #'
-#' @param OOB_err dataframe containing OOB errors for each iteration.
-#' @param OOB_weights vector of weights in the same format as for the \code{missForest} function.
-#' @param ximp_new imputed dataframe of current iteration
-#' @param ximp_old imputed dataframe of previous iteration
-#' @param xmis the original dataframe containing missing values.
+#' @param err dataframe containing OOB or apparent errors for each iteration.
+#' @param weights vector of weights in the same format as for the \code{missForest} function.
 #'
 #' @return A list with elements
 #'     \item{\code{converged}}{boolean indicating if the algorithm has converged (TRUE) or not (FALSE)}
@@ -14,21 +11,19 @@
 #'     \item{\code{measure_new}}{new measure: TODO: will this work?}
 #' @export
 
-calculate_convergence <- function(OOB_err, OOB_weights,
-                                  ximp_new, ximp_old,
-                                  xmis){
+calculate_convergence <- function(err, weights){
 
-  iter <- max(OOB_err$iteration[!is.na(OOB_err$NMSE)])
+  iter <- max(err$iteration[!is.na(err$NMSE)])
 
-  NMSE_err_new <- weighted.mean(OOB_err[OOB_err$iteration == iter,"NMSE"],
-                                w = OOB_weights)
+  NMSE_err_new <- weighted.mean(err[err$iteration == iter,"NMSE"],
+                                w = weights)
   if (iter == 1) {
     # TODO: isn't this always 1?
-    #NMSE_err_old <- weighted.mean(rep(1, length(impute_sequence)), w = OOB_weights[impute_sequence])
+    #NMSE_err_old <- weighted.mean(rep(1, length(impute_sequence)), w = weights[impute_sequence])
     NMSE_err_old <- 1
   } else {
-    NMSE_err_old <- weighted.mean(OOB_err[OOB_err$iteration == iter - 1,"NMSE"],
-                                  w = OOB_weights)
+    NMSE_err_old <- weighted.mean(err[err$iteration == iter - 1,"NMSE"],
+                                  w = weights)
   }
 
   converged <- NMSE_err_new >= NMSE_err_old

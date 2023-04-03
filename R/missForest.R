@@ -26,7 +26,7 @@
 #'
 #' @param xmis dataframe containing missing values of class dataframe ("tibble" class tbl_df is also supported). Matrix format is not supported. See details for column format.
 #' @param maxiter maximum number of iterations
-#' @param OOB_weights named vector of weights for each variable in the convergence criteria.
+#' @param var_weights named vector of weights for each variable in the convergence criteria.
 #' The names should correspond to variable names. If predictor_matrix is used, it is sufficient to specify the
 #' variables for which imputation needs to be done (have rowsum in the matrix > 0).
 #' By default the weights are set to the proportion of missing values on each variable.
@@ -56,6 +56,8 @@
 #' @param verbose (boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported).
 #' See vignette for \code{num.trees} example.
+#' @param convergence_error Which error should be used for the convergence criterion. Supported values: OOB and apparent.
+#' If a different value is provided, it defaults to OOB.
 #'
 #' @return Object of class \code{missForest} with elements
 #'     \item{\code{ximp}}{dataframe with imputed values}
@@ -89,7 +91,7 @@
 missForest <- function(xmis,
                        maxiter = 10,
                        fixed_maxiter = FALSE,
-                       OOB_weights = NULL,
+                       var_weights = NULL,
                        decreasing = FALSE,
                        initialization = "mean/mode",
                        x_init = NULL,
@@ -99,6 +101,7 @@ missForest <- function(xmis,
                        predictor_matrix = NULL,
                        proportion_usable_cases = c(1,0),
                        verbose = TRUE,
+                       convergence_error = "OOB",
                        ...){
 
   unsupported_args <- c("case.weights", "splitrule", "num.random.splits",
@@ -109,6 +112,12 @@ missForest <- function(xmis,
   unsupported_args <- unsupported_args[unsupported_args %in% names(list(...))]
   if (length(unsupported_args) > 0){
     stop(sprintf("The following argument(s) to ranger function are not supported: %s", paste(unsupported_args, collapse = ", ")))
+  }
+
+  if (!convergence_error %in% c("OOB", "apparent")){
+    message(sprintf("Supported values for convergence_error are: OOB and apparent. The value passed was: %s. Defaulting to OOB.",
+                    convergence_error))
+    convergence_error <- "OOB"
   }
 
   if (!is.numeric(maxiter) |  maxiter < 1) stop("maxiter need to be greater than 1")
@@ -158,16 +167,16 @@ missForest <- function(xmis,
   vars_included_as_pred <- colnames(predictor_matrix)[!colSums(predictor_matrix) == 0]
   vars_used <- unique(c(vars_included_to_impute, vars_included_as_pred))
 
-  if (!is.null(OOB_weights)){
+  if (!is.null(var_weights)){
 
-    if (is.null(names(OOB_weights)))
-      stop("OOB_weights needs to be a named vector.")
+    if (is.null(names(var_weights)))
+      stop("var_weights needs to be a named vector.")
 
-    is_in_OOB_weights <- vars_included_to_impute %in% names(OOB_weights)
+    is_in_var_weights <- vars_included_to_impute %in% names(var_weights)
 
-    if (!all(is_in_OOB_weights))
-      stop("Variables %s need to be imputed and are not specified in OOB_weights.",
-           vars_included_to_impute[!is_in_OOB_weights])
+    if (!all(is_in_var_weights))
+      stop("Variables %s need to be imputed and are not specified in var_weights.",
+           vars_included_to_impute[!is_in_var_weights])
 
   }
 
@@ -282,10 +291,10 @@ missForest <- function(xmis,
   impute_sequence <- impute_sequence[impute_sequence %in% vars_included_to_impute]
 
   # set weights
-  if(is.null(OOB_weights)) OOB_weights <- miss_proportion
-  if (sum(OOB_weights) == 0)
-    OOB_weights <- replace(OOB_weights, names(OOB_weights), 1)
-  OOB_weights <- OOB_weights[names(OOB_weights) %in% vars_included_to_impute]
+  if(is.null(var_weights)) var_weights <- miss_proportion
+  if (sum(var_weights) == 0)
+    var_weights <- replace(var_weights, names(var_weights), 1)
+  var_weights <- var_weights[names(var_weights) %in% vars_included_to_impute]
 
   # set class weights
   if (is.null(class.weights) & any(var_type == "factor")) {
@@ -309,6 +318,10 @@ missForest <- function(xmis,
                         MER = NA_real_,
                         macro_F1 = NA_real_,
                         F1_score = NA_real_)
+  # keep apparent error
+  apparent_err <- data.frame(iteration = sort(rep(1:maxiter, length(impute_sequence))),
+                             variable = rep(impute_sequence, maxiter),
+                             NMSE = NA_real_)
 
   iter <- 1
   converged <- FALSE
@@ -356,7 +369,7 @@ missForest <- function(xmis,
         # if the column is not complete, impute the missing values
         if (nrow(misX) > 0) {
           misY <- predict(RF, misX)$predictions
-            ximp[misi, col] <- misY
+          ximp[misi, col] <- misY
         }
 
       } else { # categorical
@@ -377,7 +390,7 @@ missForest <- function(xmis,
           levels <- colnames(preds)
 
           # impute
-            ximp[misi, col] <- apply(preds, 1, function(x) levels[which.max(x)])
+          ximp[misi, col] <- apply(preds, 1, function(x) levels[which.max(x)])
         }
       }
 
@@ -396,13 +409,20 @@ missForest <- function(xmis,
       # evaluate OOB error
       if (var_type[col] == "numeric") {
 
-
+        # OOB error
         OOB_MSE <- mse(RF$predictions[oob_i], obsY[oob_i])
         OOB_NMSE <- ifelse(var(obsY[oob_i]) == 0, 0, # TODO: is this the best thing?
                            nmse(RF$predictions[oob_i], obsY[oob_i]))
 
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <- OOB_MSE
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "NMSE"] <- OOB_NMSE
+
+        # apparent error
+        apparent_preds <- predict(RF, obsX)$predictions
+        apparent_NMSE <- ifelse(var(obsY) == 0, 0, # TODO: is this the best thing?
+                                nmse(apparent_preds, obsY))
+        apparent_err[apparent_err$iteration == iter &
+                     apparent_err$variable == col, "NMSE"] <- apparent_NMSE
 
 
       } else { # categorical
@@ -431,16 +451,25 @@ missForest <- function(xmis,
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "macro_F1"] <- OOB_macro_F1
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "F1_score"] <- OOB_F1
 
+        # apparent error
+        apparent_preds <- predict(RF, obsX)$predictions
+        apparent_NMSE <- BSnorm(apparent_preds[,col_order], obsY_binary[ , , drop = FALSE])
+        apparent_err[apparent_err$iteration == iter &
+                     apparent_err$variable == col, "NMSE"] <- apparent_NMSE
+
       }
     }
 
     if (verbose) cat("done!\n")
 
     # calculate convergence
-    convergence <- calculate_convergence(OOB_err = OOB_err,
-                                         OOB_weights = OOB_weights[impute_sequence],
-                                         ximp_new = ximp, ximp_old = ximp_old,
-                                         xmis = xmis)
+    if (convergence_error == "OOB"){
+      convergence <- calculate_convergence(err = OOB_err,
+                                           weights = var_weights[impute_sequence])
+    } else {
+      convergence <- calculate_convergence(err = apparent_err,
+                                           weights = var_weights[impute_sequence])
+    }
 
     converged <- convergence$converged
 
