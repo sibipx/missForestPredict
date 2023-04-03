@@ -27,7 +27,7 @@ For basic usage of the `missForestPredict` package read the *Using the missFores
 
 ## Convergence criteria
 
-`missForestPredict` imputes each variable in a dataset in an iterative fashion, using an adapted version of the `misForest` algorithm [@stekhoven2012missforest]. At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the `var_weights` parameter. By default the weight of each variable in the convergence criteria is set to the proportion of missing values in the dataset. 
+`missForestPredict` imputes each variable in a dataset in an iterative fashion, using an adapted version of the `misForest` algorithm [@stekhoven2012missforest]. By default, convergence is calculated based on the OOB error, but the apparent error can be used too. At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the `var_weights` parameter. By default the weight of each variable in the convergence criteria is set to the proportion of missing values in the dataset. 
 
 The normalized mean square error (NMSE) is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score).
 
