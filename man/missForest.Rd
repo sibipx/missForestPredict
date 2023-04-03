@@ -17,7 +17,6 @@ missForest(
   save_models = FALSE,
   predictor_matrix = NULL,
   proportion_usable_cases = c(1, 0),
-  on_the_fly = TRUE,
   verbose = TRUE,
   ...
 )

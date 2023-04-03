@@ -98,7 +98,6 @@ missForest <- function(xmis,
                        save_models = FALSE,
                        predictor_matrix = NULL,
                        proportion_usable_cases = c(1,0),
-                       on_the_fly = TRUE,
                        verbose = TRUE,
                        ...){
 
@@ -335,7 +334,6 @@ missForest <- function(xmis,
     t_start <- proc.time()
     # TODO: is it possible not to store this?
     ximp_old <- ximp
-    ximp_later <- ximp
 
     for (col in impute_sequence){
 
@@ -358,11 +356,7 @@ missForest <- function(xmis,
         # if the column is not complete, impute the missing values
         if (nrow(misX) > 0) {
           misY <- predict(RF, misX)$predictions
-          if (on_the_fly){
             ximp[misi, col] <- misY
-          } else {
-            ximp_later[misi, col] <- misY
-          }
         }
 
       } else { # categorical
@@ -383,11 +377,7 @@ missForest <- function(xmis,
           levels <- colnames(preds)
 
           # impute
-          if (on_the_fly){
             ximp[misi, col] <- apply(preds, 1, function(x) levels[which.max(x)])
-          } else {
-            ximp_later[misi, col] <- apply(preds, 1, function(x) levels[which.max(x)])
-          }
         }
       }
 
@@ -443,8 +433,6 @@ missForest <- function(xmis,
 
       }
     }
-
-    if (!on_the_fly) ximp <- ximp_later
 
     if (verbose) cat("done!\n")
 
