@@ -7,14 +7,11 @@
 check_predictor_matrix(predictor_matrix, data, verbose = TRUE)
 }
 \arguments{
-\item{predictor_matrix}{custome predictor matrix}
+\item{predictor_matrix}{custom predictor matrix}
 
 \item{data}{dataframe to be imputed}
 
-\item{verbose}{return human readable message for the checks.}
-}
-\value{
-predictor matrix that can be used as a start for setting a custom predictor matrix
+\item{verbose}{if TRUE, returns human readable message for the checks performed.}
 }
 \description{
 Performs a number of checks on a custom predictor matrix and returns error if the matrix is

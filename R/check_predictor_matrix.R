@@ -3,11 +3,10 @@
 #' Performs a number of checks on a custom predictor matrix and returns error if the matrix is
 #' not in a valid format.
 #'
-#' @param predictor_matrix custome predictor matrix
+#' @param predictor_matrix custom predictor matrix
 #' @param data dataframe to be imputed
-#' @param verbose return human readable message for the checks.
+#' @param verbose if TRUE, returns human readable message for the checks performed.
 #'
-#' @return predictor matrix that can be used as a start for setting a custom predictor matrix
 #' @export
 
 check_predictor_matrix <- function(predictor_matrix, data, verbose = TRUE) {

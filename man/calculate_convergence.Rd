@@ -14,9 +14,10 @@ calculate_convergence(err, weights)
 \value{
 A list with elements
     \item{\code{converged}}{boolean indicating if the algorithm has converged (TRUE) or not (FALSE)}
-    \item{\code{measure_old}}{old measure: TODO: will this work?}
-    \item{\code{measure_new}}{new measure: TODO: will this work?}
+    \item{\code{measure_old}}{the total error of the previous iteration}
+    \item{\code{measure_new}}{the total error of the last iteration}
 }
 \description{
-Calculates convergence based on NMSE.
+Calculates convergence based on NMSE. Details on the convergence criterion calculation are
+provided in the package vignettes.
 }

@@ -1,14 +1,15 @@
 #' Calculates convergence based on NMSE
 #'
-#' Calculates convergence based on NMSE.
+#' Calculates convergence based on NMSE. Details on the convergence criterion calculation are
+#' provided in the package vignettes.
 #'
 #' @param err dataframe containing OOB or apparent errors for each iteration.
 #' @param weights vector of weights in the same format as for the \code{missForest} function.
 #'
 #' @return A list with elements
 #'     \item{\code{converged}}{boolean indicating if the algorithm has converged (TRUE) or not (FALSE)}
-#'     \item{\code{measure_old}}{old measure: TODO: will this work?}
-#'     \item{\code{measure_new}}{new measure: TODO: will this work?}
+#'     \item{\code{measure_old}}{the total error of the previous iteration}
+#'     \item{\code{measure_new}}{the total error of the last iteration}
 #' @export
 
 calculate_convergence <- function(err, weights){
@@ -18,8 +19,6 @@ calculate_convergence <- function(err, weights){
   NMSE_err_new <- weighted.mean(err[err$iteration == iter,"NMSE"],
                                 w = weights)
   if (iter == 1) {
-    # TODO: isn't this always 1?
-    #NMSE_err_old <- weighted.mean(rep(1, length(impute_sequence)), w = weights[impute_sequence])
     NMSE_err_old <- 1
   } else {
     NMSE_err_old <- weighted.mean(err[err$iteration == iter - 1,"NMSE"],

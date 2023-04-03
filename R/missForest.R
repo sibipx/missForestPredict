@@ -1,7 +1,6 @@
 #' Imputes a dataframe and returns imputation models to be used on new observations
 #'
-#' Imputes a dataframe and returns imputation models to be used on new observations.
-#' Models are built for each variable in the dataframe (even if there are no missing values).
+#' Imputes a dataframe and (if save_models = TRUE) returns imputation models to be used on new observations.
 #'
 #' An adaptation of the original missForest algorithm (Stekhoven et al. 2012) is used.
 #' Variables are initialized with a mean/mode, median/mode or custom imputation.
@@ -12,10 +11,10 @@
 #' for the first variable in the sequence or current iteration for next variables in the sequence
 #' (on-the-fly). The ranger package (Wright et al. 2017) is used for building the random forest models.
 #'
-#' The convergence criterion is based on the out-of-boostrap (OOB) error and uses NMSE (normalized mean squared error)
+#' The convergence criterion is based on the out-of-boostrap (OOB) error or the apparent error and uses NMSE (normalized mean squared error)
 #' for both continuous and categorical variables.
 #'
-#' Imputation models for all variables and all iterations are saved and can be later
+#' Imputation models for all variables and all iterations are saved (if \code{save_models} is TRUE)  and can be later
 #' applied to new observations.
 #'
 #' Both dataframe and tibble (tbl_df class) are supported as input. The imputed dataframe will be retured with the same class.
@@ -25,10 +24,10 @@
 #' NA values are considered missing values.
 #'
 #' @param xmis dataframe containing missing values of class dataframe ("tibble" class tbl_df is also supported). Matrix format is not supported. See details for column format.
-#' @param maxiter maximum number of iterations
+#' @param maxiter maximum number of iterations. By default the algorithm will stop when converge is reached or
+#' after running for maxiter, whichever occurs first.
 #' @param var_weights named vector of weights for each variable in the convergence criteria.
-#' The names should correspond to variable names. If predictor_matrix is used, it is sufficient to specify the
-#' variables for which imputation needs to be done (have rowsum in the matrix > 0).
+#' The names should correspond to variable names.
 #' By default the weights are set to the proportion of missing values on each variable.
 #' @param decreasing (boolean) if TRUE the order in which the variables are imputed is by decreasing amount of missing values.
 #' (the variable with highest amount of missing values will be imputed first). If FALSE the variable with lowest amount of missing values will be imputed first.
@@ -51,13 +50,13 @@
 #' and the second one is a maximum threshold for \code{p_miss}. Variables for which \code{p_obs} is greater than or equal to 1 (by default)
 #' will be filtered from the predictor matrix. Variables for which \code{p_miss} is lower than or equal to 0 (by default)
 #' will be filtered from the predictor matrix. For more details on \code{p_obs} and \code{p_miss} see the documentation for
-#' the \code{prop_usable_cases} function. If parameter \code{predictor_matrix} is specified, \code{proportion_usable_cases} will be ignored.
-#' TODO: this is not true, I am undecided.
+#' the \code{prop_usable_cases} function. If parameter \code{predictor_matrix} is specified, the \code{proportion_usable_cases}
+#' will be applied to this provided matrix.
 #' @param verbose (boolean) if TRUE then missForest returns OOB error estimates (MSE and NMSE) and runtime.
+#' @param convergence_error Which error should be used for the convergence criterion. Supported values: OOB and apparent.
+#' If a different value is provided, it defaults to OOB. See vignette for full details on convergence.
 #' @param ... other arguments passed to ranger function (some arguments that are specific to each variable type are not supported).
 #' See vignette for \code{num.trees} example.
-#' @param convergence_error Which error should be used for the convergence criterion. Supported values: OOB and apparent.
-#' If a different value is provided, it defaults to OOB.
 #'
 #' @return Object of class \code{missForest} with elements
 #'     \item{\code{ximp}}{dataframe with imputed values}
