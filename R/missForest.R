@@ -344,7 +344,7 @@ missForest <- function(xmis,
     if (verbose) cat("  missForest iteration", iter, "in progress...")
 
     t_start <- proc.time()
-    # TODO: is it possible not to store this?
+    # store old imputation for fixed iterations
     ximp_old <- ximp
 
     for (col in impute_sequence){
@@ -410,7 +410,7 @@ missForest <- function(xmis,
 
         # OOB error
         OOB_MSE <- mse(RF$predictions[oob_i], obsY[oob_i])
-        OOB_NMSE <- ifelse(var(obsY[oob_i]) == 0, 0, # TODO: is this the best thing?
+        OOB_NMSE <- ifelse(var(obsY[oob_i]) == 0, 1, # corner case scenario
                            nmse(RF$predictions[oob_i], obsY[oob_i]))
 
         OOB_err[OOB_err$iteration == iter & OOB_err$variable == col, "MSE"] <- OOB_MSE
@@ -418,7 +418,7 @@ missForest <- function(xmis,
 
         # apparent error
         apparent_preds <- predict(RF, obsX)$predictions
-        apparent_NMSE <- ifelse(var(obsY) == 0, 0, # TODO: is this the best thing?
+        apparent_NMSE <- ifelse(var(obsY) == 0, 1, # corner case scenario
                                 nmse(apparent_preds, obsY))
         apparent_err[apparent_err$iteration == iter &
                      apparent_err$variable == col, "NMSE"] <- apparent_NMSE
