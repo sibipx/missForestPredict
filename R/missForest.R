@@ -310,17 +310,43 @@ missForest <- function(xmis,
   }
 
   # keep OOB error
-  OOB_err <- data.frame(iteration = sort(rep(1:maxiter, length(impute_sequence))),
-                        variable = rep(impute_sequence, maxiter),
+  OOB_err <- data.frame(iteration = sort(rep(0:maxiter, length(impute_sequence))),
+                        variable = rep(impute_sequence, maxiter + 1),
                         MSE = NA_real_,
                         NMSE = NA_real_,
                         MER = NA_real_,
                         macro_F1 = NA_real_,
                         F1_score = NA_real_)
   # keep apparent error
-  apparent_err <- data.frame(iteration = sort(rep(1:maxiter, length(impute_sequence))),
-                             variable = rep(impute_sequence, maxiter),
+  apparent_err <- data.frame(iteration = sort(rep(0:maxiter, length(impute_sequence))),
+                             variable = rep(impute_sequence, maxiter + 1),
                              NMSE = NA_real_)
+
+
+  # calculate errors for initialization
+  # there is no real OOB error, we consider the apparent error
+  # right now only valid for median imputation
+  for (col in impute_sequence){
+
+    # not possible to calculate for custom as the observed values are not initialized
+    # not possible to calculate for mode imputation as it is not a probability
+    if (initialization == "custom" | var_type[col] != "numeric"){
+      OOB_err[OOB_err$iteration == 0 & OOB_err$variable == col, "NMSE"] <- 1
+      apparent_err[apparent_err$iteration == 0 & apparent_err$variable == col, "NMSE"] <- 1
+    } else { # for numeric and mean/mode initialization
+      obsi <- !NAloc[, col]
+      obsY <- ximp[obsi, col, drop = TRUE]
+
+      init_values <- rep(var_init[[col]], length(obsY))
+
+      init_NMSE <- ifelse(var(obsY) == 0, 1, # corner case scenario
+                          nmse(init_values, obsY))
+
+      OOB_err[OOB_err$iteration == 0 & OOB_err$variable == col, "NMSE"] <- init_NMSE
+      apparent_err[apparent_err$iteration == 0 & apparent_err$variable == col, "NMSE"] <- init_NMSE
+
+    }
+  }
 
   iter <- 1
   converged <- FALSE
@@ -421,7 +447,7 @@ missForest <- function(xmis,
         apparent_NMSE <- ifelse(var(obsY) == 0, 1, # corner case scenario
                                 nmse(apparent_preds, obsY))
         apparent_err[apparent_err$iteration == iter &
-                     apparent_err$variable == col, "NMSE"] <- apparent_NMSE
+                       apparent_err$variable == col, "NMSE"] <- apparent_NMSE
 
 
       } else { # categorical
@@ -454,7 +480,7 @@ missForest <- function(xmis,
         apparent_preds <- predict(RF, obsX)$predictions
         apparent_NMSE <- BSnorm(apparent_preds[,col_order], obsY_binary[ , , drop = FALSE])
         apparent_err[apparent_err$iteration == iter &
-                     apparent_err$variable == col, "NMSE"] <- apparent_NMSE
+                       apparent_err$variable == col, "NMSE"] <- apparent_NMSE
 
       }
     }

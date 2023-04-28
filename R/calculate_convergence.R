@@ -18,12 +18,8 @@ calculate_convergence <- function(err, weights){
 
   NMSE_err_new <- weighted.mean(err[err$iteration == iter,"NMSE"],
                                 w = weights)
-  if (iter == 1) {
-    NMSE_err_old <- 1
-  } else {
-    NMSE_err_old <- weighted.mean(err[err$iteration == iter - 1,"NMSE"],
-                                  w = weights)
-  }
+  NMSE_err_old <- weighted.mean(err[err$iteration == iter - 1,"NMSE"],
+                                w = weights)
 
   converged <- NMSE_err_new >= NMSE_err_old
 
