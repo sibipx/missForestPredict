@@ -21,7 +21,8 @@ check_predictor_matrix <- function(predictor_matrix, data, verbose = TRUE) {
   if (nrow(predictor_matrix) != p | ncol(predictor_matrix) != p)
     stop("predictor_matrix needs to be a square matrix with the number of rows and columns equal to the number of columns of the dataframe to be imputed.")
 
-  if (any(rownames(predictor_matrix) != col_names) | any(colnames(predictor_matrix) != col_names))
+  if (any(sort(rownames(predictor_matrix)) != sort(col_names)) |
+      any(sort(colnames(predictor_matrix)) != sort(col_names)))
     stop("The row names and column names of predictor_matrix need to be the same as the column names of the dataframe.")
 
   if (!is.numeric(predictor_matrix) | sum(!predictor_matrix %in% c(0,1)) != 0)
