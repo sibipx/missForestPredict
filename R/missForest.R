@@ -260,7 +260,7 @@ missForest <- function(xmis,
           mean_col <- median(xmis[, col, drop = TRUE], na.rm = TRUE)
         }
 
-        if (save_models) var_init[[col]] <- mean_col
+        var_init[[col]] <- mean_col
 
         # initialize ximp column
         ximp[is.na(xmis[, col, drop = TRUE]), col] <- mean_col
@@ -272,7 +272,7 @@ missForest <- function(xmis,
         # if there are several classes with equal number of samples, sample one at random
         mode_col <- sample(names(which(max_level == summary_col)), 1)
         # keep mode
-        if (save_models) var_init[[col]] <- mode_col
+        var_init[[col]] <- mode_col
 
         # initialize ximp column
         ximp[is.na(xmis[, col, drop = TRUE]),col] <- mode_col
