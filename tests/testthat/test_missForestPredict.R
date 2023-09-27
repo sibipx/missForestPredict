@@ -411,7 +411,7 @@ test_that("excluding a variable from imputation and as a predictor works (predic
                sort(names(predictor_matrix["Species",][predictor_matrix["Species",] == 1])))
 })
 
-test_that("imputation works when train and test have different factor levels", {
+test_that("imputation works when train and test have different factor levels - one factor in train", {
 
   data(iris)
 
@@ -430,6 +430,25 @@ test_that("imputation works when train and test have different factor levels", {
                TRUE)
 
 })
+
+test_that("imputation works when train and test have different factor levels - one factor in test", {
+
+  data(iris)
+
+  iris_train <- produce_NA(iris[1:100,], proportion = 0.1)
+  iris_test <- produce_NA(iris[101:150,], proportion = 0.1)
+  iris_test$Species <- as.factor(as.character(iris_test$Species))
+
+  # impute train and test df
+  set.seed(2022)
+  missForest_object <- missForestPredict::missForest(iris_train, save_models = TRUE, verbose = FALSE)
+  iris_test_imp <- missForestPredict::missForestPredict(missForest_object, newdata = iris_test)
+
+  expect_equal(all(iris_test_imp$Species[is.na(iris_test$Species)] == "versicolor"),
+               TRUE)
+
+})
+
 
 test_that("fixed number of iterations works", {
 

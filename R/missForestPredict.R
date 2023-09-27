@@ -125,6 +125,8 @@ missForestPredict <- function(missForestObj, newdata, x_init = NULL){
             preds <- predict(model, ximp[NAloc[,c], names(ximp)!=c])$predictions
             levels <- colnames(preds)
             preds <- apply(preds, 1, function(x) levels[which.max(x)])
+            if (is.factor(ximp[, c, drop = TRUE]))
+              levels(ximp[, c]) <- unique(c(levels(ximp[,c, drop = TRUE]), levels))
             ximp[NAloc[,c],c] <- preds
 
           } else {
