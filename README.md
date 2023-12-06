@@ -6,7 +6,7 @@ Check the vignettes for instructions on how to use the package.
 
 Functionality:
 
-- uses ranger iso randomForest
+- uses ranger package for random forest models (fast imputation)
 
 - saves initialization & support for custom initialization
 
