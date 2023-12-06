@@ -4,15 +4,17 @@ missForestPredict is an adaptation of the missForest algorithm for prediction se
 
 It uses a single convergence criterion for continuous and categorical variables, based on the out-of-bag error.
 
-It suitable for large and high dimensional datasets, as it s based on the ranger R package, which provides a fast C++ implementation of  random forests.
+It suitable for large and high dimensional datasets, as it s based on the ranger R package, which provides a fast C++ implementation of random forests.
 
-Changes done (for my record):
+Check the vignettes for instructions on how to use the package.
+
+Adaptations:
 
 - use ranger iso randomForest
 
 - save initialization & support for custom initialization
 
-- build models for non-missing variables
+- builds models for non-missing variables
 
 - save models
 
@@ -27,7 +29,5 @@ Changes done (for my record):
 - control variables to be imputed and predictors for each variable using predictor_matrix and proportion_usable_cases
 
 - better error monitoring 
-
-## For the future...
 
 
