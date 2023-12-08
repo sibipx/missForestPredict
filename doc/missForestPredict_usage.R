@@ -4,7 +4,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-## ----eval=FALSE---------------------------------------------------------------
+## ---- eval=FALSE--------------------------------------------------------------
 #  library(devtools)
 #  devtools::install_git('https://gitlab.kuleuven.be/u0143313/missforestpredict/', dependencies = TRUE)
 #  
@@ -36,7 +36,9 @@ head(iris_test_miss)
 
 ## -----------------------------------------------------------------------------
 set.seed(2022)
-iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, 
+                                                       save_models = TRUE, 
+                                                       num.threads = 2)
 
 
 ## -----------------------------------------------------------------------------
@@ -79,7 +81,9 @@ head(iris_test_imp)
 
 ## -----------------------------------------------------------------------------
 set.seed(2022)
-iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE)
+iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, 
+                                                       save_models = TRUE,
+                                                       num.threads = 2)
 
 # store imputed dataframe
 iris_train_imp <- iris_train_imp_object$ximp
@@ -117,7 +121,8 @@ head(diamonds_test_miss)
 set.seed(2022)
 diamonds_train_imp_object <- missForestPredict::missForest(diamonds_train_miss,
                                                            save_models = TRUE,
-                                                           num.trees = 100)
+                                                           num.trees = 100,
+                                                           num.threads = 2)
 
 # impute test set
 diamonds_train_imp_object$ximp <- NULL 
@@ -167,7 +172,8 @@ set.seed(2022)
 iris_train_imp_obj <- missForest(iris_train_miss, 
                                  save_models = TRUE,
                                  initialization = "custom", 
-                                 x_init = iris_train_init)
+                                 x_init = iris_train_init,
+                                 num.threads = 2)
 
 # build test set initialization using the linear models learned on training
 iris_test_init <- iris_test_miss
@@ -227,7 +233,8 @@ print(predictor_matrix)
 set.seed(2022)
 iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE, 
                                                        predictor_matrix = predictor_matrix,
-                                                       verbose = TRUE)
+                                                       verbose = TRUE,
+                                                       num.threads = 2)
 
 iris_train_imp <- iris_train_imp_object$ximp
 
@@ -270,7 +277,8 @@ print(predictor_matrix)
 set.seed(2022)
 iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE, 
                                                        predictor_matrix = predictor_matrix,
-                                                       verbose = TRUE)
+                                                       verbose = TRUE,
+                                                       num.threads = 2)
 
 iris_train_imp <- iris_train_imp_object$ximp
 
@@ -310,7 +318,8 @@ print(predictor_matrix)
 set.seed(2022)
 iris_train_imp_object <- missForestPredict::missForest(iris_train_miss, save_models = TRUE, 
                                                        predictor_matrix = predictor_matrix,
-                                                       verbose = TRUE)
+                                                       verbose = TRUE,
+                                                       num.threads = 2)
 
 iris_train_imp <- iris_train_imp_object$ximp
 
@@ -334,7 +343,8 @@ iris_mis[51:150, "Petal.Length"] <- NA
 
 set.seed(2022)
 iris_train_imp_object <- missForestPredict::missForest(iris_mis, save_models = TRUE, 
-                                                       verbose = TRUE)
+                                                       verbose = TRUE,
+                                                       num.threads = 2)
 
 print(iris_train_imp_object$predictor_matrix)
 

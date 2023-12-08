@@ -71,6 +71,8 @@ Post imputation, the error can be checked using the `evaluate_imputation_error` 
 
 # Examples
 
+Please note that in all following examples we set the `ranger` parameter `num.threads` to 2. If you are running the code on a machine with more cores and you are willing to use them for running the code, you can remove this parameter completely.
+
 ## Data used for demonstration
 
 **Iris data** The iris dataset in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers [@anderson1935irises].
@@ -89,7 +91,7 @@ set.seed(2022)
 iris_mis <- produce_NA(iris, proportion = 0.5)
 
 set.seed(2022)
-missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE)
+missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE, num.threads = 2)
 
 print(missForest_object$OOB_err)
 
@@ -130,7 +132,7 @@ set.seed(2022)
 iris_mis <- produce_NA(iris, proportion = proportion_missing)
 
 set.seed(2022)
-missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE)
+missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE, num.threads = 2)
 
 # plot convergence
 missForest_object$OOB_err %>% 
@@ -147,7 +149,7 @@ We will further adapt the weights to be equal. You can observe that the results 
 
 set.seed(2022)
 missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE, 
-                                                   var_weights = setNames(rep(1, ncol(iris_mis)), colnames(iris_mis)))
+                                                   var_weights = setNames(rep(1, ncol(iris_mis)), colnames(iris_mis)), num.threads = 2)
 
 # plot convergence
 missForest_object$OOB_err %>% 

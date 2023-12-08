@@ -8,11 +8,12 @@ Maintainer: Elena Albu <elena.albu@kuleuven.be>
 Depends: R (>= 4.0)
 Imports: ranger, methods, stats
 Suggests: knitr, rmarkdown, ggplot2, dplyr, tidyr
-Description: Missing data imputation based on the missForest algorithm with adaptations for prediction settings. 
-    The function missForest is used to impute a (training) dataset with missing values and 
-    to learn imputation models that can be later used for imputing new observations. 
-    The function missForestPredict is used to impute one or multiple new observations (test set) 
-    using the models learned on the training data. 
+Description: Missing data imputation based on the 'missForest' algorithm 
+    with adaptations for prediction settings. The function 'missForest' is used 
+    to impute a (training) dataset with missing values and to learn imputation 
+    models that can be later used for imputing new observations. 
+    The function 'missForestPredict' is used to impute one or multiple new 
+    observations (test set) using the models learned on the training data. 
 Encoding: UTF-8
 License: GPL (>= 2)
 URL: https://github.com/sibipx/missForestPredict

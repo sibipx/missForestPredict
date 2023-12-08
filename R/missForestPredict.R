@@ -27,7 +27,7 @@
 #' iris_test_miss <- produce_NA(iris_test, proportion = 0.1)
 #'
 #' # impute train and learn imputation models
-#' iris_train_imp_obj <- missForest(iris_train_miss, save_models = TRUE)
+#' iris_train_imp_obj <- missForest(iris_train_miss, save_models = TRUE, num.threads = 2)
 #'
 #' # impute test
 #' iris_test_imp_new <- missForestPredict(iris_train_imp_obj, newdata = iris_test_miss)

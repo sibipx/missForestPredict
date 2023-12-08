@@ -14,7 +14,7 @@ missForest(
   x_init = NULL,
   class.weights = NULL,
   return_integer_as_integer = FALSE,
-  save_models = FALSE,
+  save_models = TRUE,
   predictor_matrix = NULL,
   proportion_usable_cases = c(1, 0),
   verbose = TRUE,
@@ -52,7 +52,7 @@ If FALSE, integer columns will be returned as double (This might be desirable, f
 Default is FALSE. The same behaviour will be applied to new observations when using missForestPredict.}
 
 \item{save_models}{if TRUE, imputation models are saved and a new observation (or a test set) can be imputed using the models learned;
-saving models on a dataset with a high number of variables will occupy RAM memory on the machine}
+saving models on a dataset with a high number of variables will occupy RAM memory on the machine. Default is TRUE.}
 
 \item{predictor_matrix}{predictor matrix indicating which variables to use in the imputation of each variable.
 See documentation for function \code{create_predictor_matrix} for details on the matrix format.}
@@ -112,7 +112,7 @@ NA values are considered missing values.
 \examples{
 data(iris)
 iris_mis <- produce_NA(iris, proportion = 0.1)
-imputation_object <- missForest(iris_mis)
+imputation_object <- missForest(iris_mis, num.threads = 2)
 iris_imp <- imputation_object$ximp
 
 }
