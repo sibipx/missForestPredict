@@ -13,6 +13,9 @@ check_predictor_matrix(predictor_matrix, data, verbose = TRUE)
 
 \item{verbose}{if TRUE, returns human readable message for the checks performed.}
 }
+\value{
+No return value, only verifies the validity the provided predictor matrix
+}
 \description{
 Performs a number of checks on a custom predictor matrix and returns error if the matrix is
 not in a valid format.

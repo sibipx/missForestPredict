@@ -7,6 +7,7 @@
 #' @param data dataframe to be imputed
 #' @param verbose if TRUE, returns human readable message for the checks performed.
 #'
+#' @return No return value, only verifies the validity the provided predictor matrix
 #' @export
 
 check_predictor_matrix <- function(predictor_matrix, data, verbose = TRUE) {
