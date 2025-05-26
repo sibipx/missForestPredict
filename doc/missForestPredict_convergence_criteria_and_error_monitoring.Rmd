@@ -1,0 +1,176 @@
+---
+title: "missForestPredict convergence criteria and error monitoring"
+author: "Elena Albu"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{missForestPredict convergence criteria and error monitoring}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+## What is this document?
+
+This document explains in detail the convergence criteria and error monitoring.
+
+For basic usage of the `missForestPredict` package read the *Using the missForestPredict package* vignette.
+
+## Convergence criteria
+
+`missForestPredict` imputes each variable in a dataset in an iterative fashion, using an adapted version of the `misForest` algorithm [@stekhoven2012missforest]. By default, convergence is calculated based on the OOB error, but the apparent error can be used too. At each iteration the out-of-bag (OOB) error is calculated for each variable separately. To obtain a global error the OOB errors for all variables a weighted average is used, that can be controlled by the `var_weights` parameter. By default the weight of each variable in the convergence criteria is set to the proportion of missing values in the dataset. 
+
+The normalized mean square error (NMSE) is used for both continuous and categorical variables. For continuous variables, it is equivalent to $1 - R^2$. For categorical variables, it is equivalent to $1 - BSS$ (Brier Skill Score).
+
+**Continuous variables**:
+
+$NMSE = \frac{\sum_{i=1}^{N}(x_i - \hat{x_i})^2}{\sum_{i=1}^{N} (x_i - \bar{x})^2} = 1 - R^2$, $i = 1, 2, ... N$
+
+${x_i}$ = the true value of variable x for observation i
+
+$\bar{x}$ = the mean value of variable x
+
+$\hat{x_i}$ = prediction (imputation) of variable x for observation i 
+
+$N$ = number of observations
+
+**Categorical variables (including ordinal factors)**:
+
+$NMSE = \frac{BS}{BSref} = 1 - BSS$
+
+$BS =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{ij} - x_{ij})^2$, $i = 1, 2, ... N$, $j = 1, 2, ... R$
+
+$BSref =\frac{1}{N}\sum_{j=1}^{R}\sum_{i=1}^{N}(p_{j} - x_{ij})^2=1-\sum_{j=1}^{R}p_j^2$
+
+${x_{ij}}$ = the true value of variable x for observation i and class j (1 if observation i has class j and 0 otherwise)
+
+$p_{ij}$ = prediction (probability) for observation i and class j
+
+$p_{j}$ = proportion of the event in class j
+
+$N$ = number of observations
+
+$R$ = number of classes
+
+The Brier Score ($BS$) is calculated as the sum of square distances between the predictions (as probabilities) and the true values (0 or 1) for each class. The reference Brier Score ($BSref$) is calculated as the Brier Score of a predictor that predicts the proportion of the event in each class [@brier1950verification].
+
+## Imputation error monitoring
+
+At each iteration, the MSE (mean square error) and NMSE (normalized mean square error) are saved and reported for each variable if `verbose = TRUE`. 
+
+Post imputation, the error can be checked using the `evaluate_imputation_error` function. 
+
+# Examples
+
+Please note that in all following examples we set the `ranger` parameter `num.threads` to 2. If you are running the code on a machine with more cores and you are willing to use them for running the code, you can remove this parameter completely.
+
+## Data used for demonstration
+
+**Iris data** The iris dataset in R base contains 4 continuous variables and one categorical variable with three categories for N = 150 flowers [@anderson1935irises].
+
+**Diamonds data** The diamonds dataset from `ggplot2` R package contains seven continuous variables and three categorical variables for N = 53940 diamonds [@ggplot2].
+
+## Inspect convergence errors
+
+The MSE and NMSE errors are returned at the end of the imputation as part of the return object.
+
+```{r warning=FALSE, message=FALSE}
+library(missForestPredict)
+
+data(iris)
+set.seed(2022)
+iris_mis <- produce_NA(iris, proportion = 0.5)
+
+set.seed(2022)
+missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE, num.threads = 2)
+
+print(missForest_object$OOB_err)
+
+```
+
+These can be plotted in a graph if visual inspection seems easier to understand. We will plot the errors using `ggplot2` package.
+
+```{r fig.width = 7, message=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+missForest_object$OOB_err %>% 
+  filter(!is.na(NMSE)) %>% 
+  ggplot(aes(iteration, NMSE, col = variable)) +
+  geom_point() +
+  geom_line()
+
+```
+
+## Use weighted average in convergence
+
+The convergence of the algorithm is based on the a weighted average of the OOB NMSE for each variable. The weights are proportional to the proportion of missing values in the dataset. There can be situations when this in not the optimal choice. The weights for each variable can be adjusted via the `var_weights` parameter. In the following example we will create different proportion of missing values for each variable and adjust the weights to be equal.
+
+We will create missing values only on the last two variables (Petal.Width and Species) and first run the imputation with the default setting. Keep in mind that `missForestPredict` builds models for all variables in the dataset, regardless of the missingness rate. Models will be built also for variables that are complete. Their weight will be zero in the convergence criteria, but imputation models will still be stored for these variables and can be later used on new observations; if unexpectedly missing values will occur in your test set, these will be imputed using these learned models.
+
+```{r fig.width = 7}
+library(missForestPredict)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+data(iris)
+
+proportion_missing <- c(0, 0, 0, 0.3, 0.3)
+
+set.seed(2022)
+iris_mis <- produce_NA(iris, proportion = proportion_missing)
+
+set.seed(2022)
+missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE, num.threads = 2)
+
+# plot convergence
+missForest_object$OOB_err %>% 
+  filter(!is.na(NMSE)) %>% 
+  ggplot(aes(iteration, NMSE, col = variable)) +
+  geom_point() +
+  geom_line()
+
+```
+
+We will further adapt the weights to be equal. You can observe that the results (number of iterations) will be different in this case.
+
+```{r fig.width = 7}
+
+set.seed(2022)
+missForest_object <- missForestPredict::missForest(iris_mis, verbose = TRUE, 
+                                                   var_weights = setNames(rep(1, ncol(iris_mis)), colnames(iris_mis)), num.threads = 2)
+
+# plot convergence
+missForest_object$OOB_err %>% 
+  filter(!is.na(NMSE)) %>% 
+  ggplot(aes(iteration, NMSE, col = variable)) +
+  geom_point() +
+  geom_line()
+
+```
+
+## Assess imputation error when the true values are known
+
+Post imputation, the error can be checked using the `evaluate_imputation_error` function. This can be done, of course, only when the true values (passed via `xtrue`) are known. The errors are calculated as differences from the true values.
+
+As Species is a categorical variable and it is imputed with one of the classes of the variable (setosa, versicolor or virginica) and not with probabilities, only the MER (missclassification error rate) can be calculated post imputation.
+
+By default, `evaluate_imputation_error` returns the MSE and NMSE using only the missing values, while the OOB error in the convergence criteria is calculated using only the non-missing values.
+
+```{r}
+evaluate_imputation_error(missForest_object$ximp, iris_mis, iris)
+
+```
+
+# References

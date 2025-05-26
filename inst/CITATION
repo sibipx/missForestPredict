@@ -1,0 +1,16 @@
+citHeader("To cite the missForestPredict package in publications, please use:")
+
+bibentry(
+  "Article",
+  title = "missForestPredict--Missing data imputation for prediction settings",
+  author = c(
+    person("Elena", "Albu"),
+    person("Shan", "Gao"),
+    person("Laure", "Wynants"),
+    person("Ben", "Van Calster")
+  ),
+  year = "2024",
+  journal = "arXiv preprint",
+  note = "arXiv:2407.03379",
+  url = "https://arxiv.org/abs/2407.03379"
+)

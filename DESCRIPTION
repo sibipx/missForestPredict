@@ -1,11 +1,11 @@
 Package: missForestPredict
 Type: Package
 Title: Missing Value Imputation using Random Forest for Prediction Settings
-Version: 1.0
-Date: 2023-12-06
+Version: 1.0.1
+Date: 2025-05-23
 Authors@R: c(
-    person("Elena", "Albu", , "elena.albu@kuleuven.be", c("aut", "cre"),
-           comment = c(ORCID = "0000-0003-2602-0918"))
+    person("Elena", "Albu", , "elenaa.albu@gmail.com", c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-2602-0918", funding = "KU Leuven"))
            )
 Depends: R (>= 4.0)
 Imports: ranger, methods, stats
@@ -15,9 +15,11 @@ Description: Missing data imputation based on the 'missForest' algorithm (Stekho
     to impute a (training) dataset with missing values and to learn imputation 
     models that can be later used for imputing new observations. 
     The function missForestPredict() is used to impute one or multiple new 
-    observations (test set) using the models learned on the training data. 
+    observations (test set) using the models learned on the training data. For more details see 
+    Albu, E., Gao, S., Wynants, L., & Van Calster, B. (2024). missForestPredict--Missing data imputation for prediction settings <doi:10.48550/arXiv.2407.03379>.
 Encoding: UTF-8
 License: GPL (>= 2)
 URL: https://github.com/sibipx/missForestPredict
-RoxygenNote: 7.2.3
+BugReports: https://github.com/sibipx/missForestPredict/issues
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr
